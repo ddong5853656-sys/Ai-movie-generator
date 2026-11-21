@@ -130,9 +130,7 @@ if "saved_project_loaded" not in st.session_state:
     st.session_state.saved_project_loaded = False
 
 if not st.session_state.saved_project_loaded:
-    saved_data = localS.getItem(
-        SAVE_KEY,
-        key="load_saved_movie_project"
+    saved_data = localS.getItem(SAVE_KEY)
     )
 
     if saved_data:
