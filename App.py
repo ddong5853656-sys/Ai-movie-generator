@@ -845,5 +845,4 @@ Return only the scene prompt.
                     st.session_state.scene_number += 1
                     st.rerun()
 
-    else:
-        st.success("All planne
+    st.success("All planned scenes have been generated!")
