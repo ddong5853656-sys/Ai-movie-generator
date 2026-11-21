@@ -1,393 +1,493 @@
-
 import streamlit as st
-import requests
-import time
+from openai import OpenAI
 
 st.set_page_config(
-    page_title="AI Video Studio",
+    page_title="AI Movie Prompt Generator",
     page_icon="🎬",
     layout="wide"
 )
 
-API_URL = "https://apihub.agnes-ai.com/v1/videos"
-STATUS_URL = "https://apihub.agnes-ai.com/agnesapi"
-
-MODEL_NAME = "agnes-video-2.5-flash"
-
-st.markdown("""
-<style>
-.stApp {
-    background: linear-gradient(
-        135deg,
-        #1A1420,
-        #302317,
-        #17130D
-    );
-    color: white;
-}
-
-h1, h2, h3, p, label {
-    color: white !important;
-}
-
-.stButton > button {
-    background: linear-gradient(
-        135deg,
-        #D4AF37,
-        #FFD700,
-        #C99700
-    );
-    color: #171717;
-    border-radius: 12px;
-    border: 1px solid #E6C65C;
-    height: 48px;
-    font-weight: bold;
-}
-
-.stButton > button:hover {
-    background: linear-gradient(
-        135deg,
-        #FFE55C,
-        #FFD700
-    );
-    color: black;
-}
-
-.stDownloadButton > button {
-    background: linear-gradient(
-        135deg,
-        #D4AF37,
-        #FFD700
-    );
-    color: black;
-    border-radius: 12px;
-    font-weight: bold;
-    border: none;
-}
-
-.stDownloadButton > button:hover {
-    background: #FFE55C;
-    color: black;
-}
-
-textarea {
-    background-color: #123A73 !important;
-    color: white !important;
-    border: 2px solid #4A90E2 !important;
-    border-radius: 12px !important;
-}
-
-textarea::placeholder {
-    color: #D6E8FF !important;
-}
-
-input {
-    border-radius: 8px !important;
-}
-
-.stProgress > div > div {
-    background-color: #FFD700;
-}
-
-section[data-testid="stSidebar"] {
-    background: #211A25;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.title("🎬 AI VIDEO STUDIO")
-
-st.caption(
-    "Create cinematic AI videos with Agnes AI"
-)
+st.title("🎬 AI Movie Prompt Generator")
+st.caption("Hollywood-style cinematic stories and AI video prompts")
 
 with st.sidebar:
+    st.header("AI Settings")
+    api_key = st.text_input("OpenAI API Key", type="password")
+    model = st.text_input("AI Model", value="gpt-4o-mini")
 
-    st.header("⚙️ Settings")
-
-    api_key = st.secrets.get(
-        "AGNES_API_KEY",
-        ""
+    st.divider()
+    character_lock = st.checkbox(
+        "Character consistency lock",
+        value=True
+    )
+    cinematic_style = st.checkbox(
+        "Photorealistic Hollywood style",
+        value=True
+    )
+    sparse_dialogue = st.checkbox(
+        "Sparse purposeful dialogue",
+        value=True
     )
 
-    st.caption("Model: Agnes Video 2.5 Flash")
-    st.caption("Video duration: 5 seconds")
-    st.caption("Resolution: 720P")
-    st.caption("Aspect ratio: 16:9")
+
+def generate(prompt):
+    if not api_key:
+        st.error("Please enter your OpenAI API key in the sidebar.")
+        return None
+
+    try:
+        client = OpenAI(api_key=api_key)
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert Hollywood movie writer, "
+                        "character designer and cinematic AI video "
+                        "prompt engineer. Create original, detailed, "
+                        "professional cinematic content."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.8
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+        return None
+
+
+st.header("1. Movie Setup")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    movie_title = st.text_input(
+        "Movie Title",
+        "THE LAST SUNRISE"
+    )
+
+    genre = st.selectbox(
+        "Movie Genre",
+        [
+            "Sci-Fi Action",
+            "Fantasy Action",
+            "Survival",
+            "Adventure",
+            "Mystery Thriller",
+            "Horror",
+            "Action",
+            "Custom"
+        ]
+    )
+
+with col2:
+    duration = st.selectbox(
+        "Story Duration",
+        [
+            "5 minutes",
+            "10 minutes",
+            "15 minutes",
+            "20 minutes",
+            "30 minutes",
+            "45 minutes",
+            "60 minutes"
+        ]
+    )
+
+    environment = st.selectbox(
+        "Environment",
+        [
+            "Futuristic Earth",
+            "Jungle",
+            "Desert",
+            "Mountains",
+            "Island",
+            "Ocean",
+            "Ancient World",
+            "Multiple Locations"
+        ]
+    )
+
+with col3:
+    scene_duration = st.selectbox(
+        "Scene Duration",
+        ["10 seconds", "15 seconds", "20 seconds"]
+    )
+
+    visual_style = st.selectbox(
+        "Visual Style",
+        [
+            "Photorealistic Hollywood",
+            "Epic Cinematic Realism",
+            "Grounded Realistic Action"
+        ]
+    )
+
+story_idea = st.text_area(
+    "Story Idea",
+    height=120,
+    value=(
+        "In the future, Earth's natural sun begins to dim. "
+        "Humanity builds an artificial sun, but a ruthless "
+        "industrial ruler takes control of its energy."
+    )
+)
+
+hero_details = st.text_area(
+    "Hero / Heroine Details",
+    placeholder="Age, appearance, clothing, personality, powers..."
+)
+
+villain_details = st.text_area(
+    "Villain Details",
+    placeholder="Appearance, motivation, powers and purpose..."
+)
+
+extra_instructions = st.text_area(
+    "Additional Instructions",
+    placeholder="Anything else you want in your movie..."
+)
+
+movie_context = f"""
+MOVIE TITLE: {movie_title}
+GENRE: {genre}
+DURATION: {duration}
+ENVIRONMENT: {environment}
+SCENE LENGTH: {scene_duration}
+VISUAL STYLE: {visual_style}
+
+STORY IDEA:
+{story_idea}
+
+HERO:
+{hero_details}
+
+VILLAIN:
+{villain_details}
+
+ADDITIONAL INSTRUCTIONS:
+{extra_instructions}
+
+CHARACTER CONSISTENCY:
+{character_lock}
+
+CINEMATIC STYLE:
+{cinematic_style}
+
+DIALOGUE:
+{sparse_dialogue}
+"""
+
+if "story" not in st.session_state:
+    st.session_state.story = ""
+
+if "characters" not in st.session_state:
+    st.session_state.characters = ""
+
+if "scenes" not in st.session_state:
+    st.session_state.scenes = []
+
+if "scene_number" not in st.session_state:
+    st.session_state.scene_number = 0
+
 
 st.divider()
-
-st.subheader("Create Your Video")
-
-prompt = st.text_area(
-    "Describe your video",
-    placeholder="A cinematic scene of a warrior walking through a mysterious jungle...",
-    height=150
-)
-
-prompt_optimizer = st.toggle(
-    "AI Prompt Optimizer",
-    value=True
-)
+st.header("2. Generate Complete Movie Story")
 
 if st.button(
-    "✨ GENERATE VIDEO",
+    "✨ Generate Movie Story",
+    type="primary",
     use_container_width=True
 ):
 
-    if not api_key.strip():
+    prompt = movie_context + """
 
-        st.error(
-            "Agnes API key is missing. "
-            "Add it in Streamlit Secrets."
-        )
+Create an original Hollywood-style cinematic movie story.
 
-    elif not prompt.strip():
+Include:
 
-        st.error(
-            "Please enter a video prompt."
-        )
+1. Powerful opening hook
+2. Main characters
+3. Character motivations
+4. Central conflict
+5. Suspense and action escalation
+6. Original twists
+7. Emotional moments
+8. Multiple interesting locations
+9. Powerful climax
+10. Satisfying ending
+
+Write a detailed story outline suitable for the selected duration.
+
+Do NOT generate individual video scenes yet.
+"""
+
+    result = generate(prompt)
+
+    if result:
+        st.session_state.story = result
+        st.session_state.characters = ""
+        st.session_state.scenes = []
+        st.session_state.scene_number = 0
+
+
+if st.session_state.story:
+
+    st.subheader("📖 Movie Story")
+
+    st.markdown(st.session_state.story)
+
+    st.download_button(
+        "Download Story",
+        st.session_state.story,
+        file_name="movie_story.txt"
+    )
+
+
+st.divider()
+st.header("3. Character Design Bible")
+
+if st.button(
+    "👥 Generate Character Designs",
+    use_container_width=True
+):
+
+    if not st.session_state.story:
+        st.warning("First generate your movie story.")
 
     else:
 
-        headers = {
-            "Authorization": f"Bearer {api_key.strip()}",
-            "Content-Type": "application/json"
-        }
+        prompt = movie_context + f"""
 
-        payload = {
-            "model": MODEL_NAME,
-            "prompt": prompt.strip(),
-            "mode": "text",
-            "seconds": "5",
-            "size": "720P",
-            "aspect_ratio": "16:9",
-            "n": 1
-        }
+MOVIE STORY:
 
-        try:
+{st.session_state.story}
 
-            with st.spinner(
-                "Submitting video request..."
-            ):
+Create a detailed character design bible.
 
-                response = requests.post(
-                    API_URL,
-                    headers=headers,
-                    json=payload,
-                    timeout=90
-                )
+For every important character include:
 
-            if response.status_code not in (
-                200,
-                201,
-                202
-            ):
+- Exact age
+- Facial appearance
+- Hair
+- Eyes
+- Skin texture
+- Body type
+- Clothing
+- Footwear
+- Accessories
+- Personality
+- Abilities
+- Weapons
+- Movement style
+- Character purpose
 
-                st.error(
-                    f"Agnes API Error: "
-                    f"{response.status_code}"
-                )
+Create a short LOCKED VISUAL DESCRIPTION for each character.
 
-                st.code(response.text)
+Characters must look exactly the same in every scene.
 
-            else:
+Also describe important creatures, vehicles and props.
+"""
 
-                project = response.json()
+        result = generate(prompt)
 
-                video_id = project.get("video_id")
+        if result:
+            st.session_state.characters = result
 
-                if not video_id:
-                    video_id = project.get("id")
 
-                if not video_id:
-                    video_id = project.get("task_id")
+if st.session_state.characters:
 
-                if not video_id:
+    st.subheader("Character Bible")
 
-                    st.error(
-                        "No video ID returned by Agnes."
-                    )
+    st.markdown(st.session_state.characters)
 
-                    st.code(str(project))
+    st.download_button(
+        "Download Character Bible",
+        st.session_state.characters,
+        file_name="character_bible.txt"
+    )
 
-                else:
 
-                    progress = st.progress(0)
+st.divider()
+st.header("4. Generate Cinematic Video Scenes")
 
-                    status_text = st.empty()
+st.info(
+    "Generate one scene at a time. "
+    "Each new scene continues from the previous scene's ending."
+)
 
-                    start_time = time.time()
+if st.session_state.story:
 
-                    video_url = None
+    if st.button(
+        "🎥 Generate Scene 1",
+        type="primary",
+        use_container_width=True
+    ):
 
-                    while True:
+        prompt = movie_context + f"""
 
-                        elapsed = int(
-                            time.time() - start_time
-                        )
+MOVIE STORY:
 
-                        progress.progress(
-                            min(
-                                int(elapsed / 600 * 95),
-                                95
-                            )
-                        )
+{st.session_state.story}
 
-                        status_text.info(
-                            f"Generating video... "
-                            f"{elapsed} seconds"
-                        )
+CHARACTER BIBLE:
 
-                        if elapsed > 900:
+{st.session_state.characters}
 
-                            st.error(
-                                "Generation is taking too long. "
-                                "Please check your Agnes project."
-                            )
+Generate SCENE 1 ONLY.
 
-                            break
+The scene must be exactly {scene_duration}.
 
-                        time.sleep(5)
+Include:
 
-                        check = requests.get(
-                            STATUS_URL,
-                            headers=headers,
-                            params={
-                                "video_id": video_id,
-                                "model_name": MODEL_NAME
-                            },
-                            timeout=30
-                        )
+- Scene number
+- Scene title
+- Exact location
+- Time and weather
+- Atmosphere
+- Character appearance
+- Character screen positions
+- Body direction
+- Camera angle
+- Lens perspective
+- Camera movement
+- Second-by-second action
+- Realistic action and reactions
+- Important dialogue only
+- Exact final frame
 
-                        if check.status_code not in (
-                            200,
-                            201
-                        ):
+Do not make characters look directly into the camera.
 
-                            st.error(
-                                f"Agnes status error: "
-                                f"{check.status_code}"
-                            )
+The final frame must be suitable for direct continuation
+into Scene 2.
 
-                            st.code(check.text)
+Return only the cinematic video prompt.
+"""
 
-                            break
+        result = generate(prompt)
 
-                        result = check.json()
+        if result:
+            st.session_state.scenes = [result]
+            st.session_state.scene_number = 1
 
-                        status = result.get(
-                            "status",
-                            ""
-                        ).lower()
 
-                        if status == "completed":
+if st.session_state.scenes:
 
-                            video_url = result.get("url")
+    current_scene = st.session_state.scenes[-1]
 
-                            if not video_url:
+    st.subheader(
+        f"🎞️ Scene {st.session_state.scene_number}"
+    )
 
-                                metadata = result.get(
-                                    "metadata",
-                                    {}
-                                )
+    st.markdown(current_scene)
 
-                                video_url = metadata.get(
-                                    "url"
-                                )
+    st.download_button(
+        "Download Current Scene",
+        current_scene,
+        file_name=f"scene_{st.session_state.scene_number}.txt"
+    )
 
-                            if not video_url:
+    scene_count = int(
+        duration.split()[0]
+    ) * 60 // int(
+        scene_duration.split()[0]
+    )
 
-                                downloads = result.get(
-                                    "downloads",
-                                    []
-                                )
+    if st.session_state.scene_number < scene_count:
 
-                                if downloads:
+        if st.button(
+            "➡️ Generate Next Scene",
+            type="primary",
+            use_container_width=True
+        ):
 
-                                    if isinstance(
-                                        downloads[0],
-                                        dict
-                                    ):
+            previous_scene = st.session_state.scenes[-1]
 
-                                        video_url = (
-                                            downloads[0].get("url")
-                                        )
+            prompt = movie_context + f"""
 
-                                    else:
+MOVIE STORY:
 
-                                        video_url = downloads[0]
+{st.session_state.story}
 
-                            break
+CHARACTER BIBLE:
 
-                        elif status in (
-                            "failed",
-                            "error",
-                            "canceled"
-                        ):
+{st.session_state.characters}
 
-                            st.error(
-                                "Video generation failed."
-                            )
+PREVIOUS SCENE:
 
-                            st.code(str(result))
+{previous_scene}
 
-                            break
+Generate SCENE {st.session_state.scene_number + 1} ONLY.
 
-                    if video_url:
+CONTINUITY RULES:
 
-                        progress.progress(100)
+- Continue directly from the exact previous final frame.
+- Maintain the same character faces.
+- Maintain exact hair, clothes and accessories.
+- Maintain injuries and physical condition.
+- Maintain props and weapons.
+- Maintain location unless the story shows a transition.
+- Do not repeat the previous scene.
+- Advance the story naturally.
+- Specify camera angle and movement.
+- Specify character positions and directions.
+- Include second-by-second action.
+- Dialogue must be sparse and purposeful.
+- No characters looking directly at the camera.
+- No unexplained teleporting or transformations.
+- End with an exact final frame for the next scene.
 
-                        status_text.success(
-                            "Your video is ready!"
-                        )
+Return only the cinematic video prompt.
+"""
 
-                        video_response = requests.get(
-                            video_url,
-                            timeout=180
-                        )
+            result = generate(prompt)
 
-                        video_response.raise_for_status()
+            if result:
+                st.session_state.scenes.append(result)
+                st.session_state.scene_number += 1
+                st.rerun()
 
-                        video_bytes = (
-                            video_response.content
-                        )
 
-                        st.video(video_bytes)
+if len(st.session_state.scenes) > 1:
 
-                        st.download_button(
-                            "⬇️ Download Video",
-                            data=video_bytes,
-                            file_name="ai_video.mp4",
-                            mime="video/mp4",
-                            use_container_width=True
-                        )
-
-                    elif not status_text:
-
-                        st.warning(
-                            "Video URL was not returned."
-                        )
-
-        except requests.exceptions.RequestException as error:
-
-            st.error(
-                "Connection error with Agnes AI."
+    all_scenes = "\n\n".join(
+        [
+            f"SCENE {i+1}\n{scene}"
+            for i, scene in enumerate(
+                st.session_state.scenes
             )
+        ]
+    )
 
-            st.code(str(error))
+    st.download_button(
+        "📦 Download All Generated Scenes",
+        all_scenes,
+        file_name="movie_scenes.txt"
+    )
 
-        except Exception as error:
-
-            st.error(
-                "Something went wrong."
-            )
-
-            st.code(str(error))
 
 st.divider()
 
+if st.button("🔄 Reset Movie Project"):
+
+    st.session_state.story = ""
+    st.session_state.characters = ""
+    st.session_state.scenes = []
+    st.session_state.scene_number = 0
+
+    st.rerun()
+
+
 st.caption(
-    "Powered by Agnes AI • Video 2.5 Flash"
-      )
-                  
+    "AI API usage may incur charges. "
+    "Your API key is used during this session."
+)
