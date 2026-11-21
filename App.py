@@ -2,6 +2,7 @@
 import streamlit as st
 from google import genai
 import time
+import re
 
 st.set_page_config(
     page_title="AI Movie Studio",
@@ -93,7 +94,10 @@ defaults = {
     "scene_number": 0,
     "movie_context": "",
     "movie_title": "THE LAST SUNRISE",
-    "aspect_ratio": "16:9"
+    "aspect_ratio": "16:9",
+    "movie_ideas": [],
+    "selected_movie_idea": "",
+    "story_idea_input": ""
 }
 
 for key, value in defaults.items():
@@ -131,7 +135,6 @@ def generate(prompt):
 
             error_message = str(e).upper()
 
-            # Retry only temporary server errors
             temporary_error = any(
                 code in error_message
                 for code in [
@@ -166,6 +169,7 @@ def generate(prompt):
     )
     return None
 
+
 # ================= HEADER =================
 
 st.markdown("""
@@ -184,6 +188,7 @@ Create Hollywood Stories • Design Characters • Generate Cinematic Scenes
 </p>
 </div>
 """, unsafe_allow_html=True)
+
 
 # ================= SIDEBAR =================
 
@@ -216,18 +221,176 @@ with st.sidebar:
     st.caption("AI MOVIE STUDIO")
     st.caption("Powered by Google Gemini")
 
-# ================= MOVIE SETUP =================
 
-st.markdown("## 🎞️ 01 — MOVIE CREATOR")
+# ================= MOVIE TITLE =================
+
+st.markdown("## 🎞️ 01 — START YOUR MOVIE")
+
+title = st.text_input(
+    "🎬 Enter Your Movie Story Title",
+    key="movie_title_input",
+    placeholder="Example: THE LAST DRAGON"
+)
+
+# ================= 20 MOVIE IDEAS =================
+
+st.markdown("### 💡 GENERATE 20 STORY IDEAS")
+
+st.write(
+    "Pehle apni movie ka title likhein. "
+    "AI isi title ke mutabiq 20 different story ideas Roman Urdu mein banayega."
+)
+
+if st.button("✨ GENERATE 20 MOVIE IDEAS", key="ideas_btn"):
+
+    if not title.strip():
+        st.warning("Please enter your movie title first.")
+
+    else:
+
+        with st.spinner("Creating 20 unique movie ideas in Roman Urdu..."):
+
+            ideas_prompt = f"""
+MOVIE TITLE: {title}
+
+Create EXACTLY 20 different and original movie story ideas
+based on this exact movie title.
+
+IMPORTANT LANGUAGE RULE:
+- Write everything in Roman Urdu.
+- Use Urdu language written with English/Roman letters.
+- Do NOT use Urdu script.
+- Do NOT write the ideas in English.
+
+IDEA REQUIREMENTS:
+- Every idea must have a different storyline.
+- All 20 ideas must relate strongly to the given title.
+- Give each idea a short, interesting title or concept.
+- Explain each idea in 2 to 3 Roman Urdu sentences.
+- Make ideas cinematic, exciting and suitable for a Hollywood movie.
+- Use variety in suspense, emotion, action, adventure and twists.
+- Do not repeat the same plot with slightly changed wording.
+- Do not write the complete movie story.
+- Do not generate scenes or character descriptions.
+
+STRICT OUTPUT FORMAT:
+Write exactly 20 numbered ideas.
+Each idea must be on a separate line.
+Use this format:
+
+1. Idea Name — Roman Urdu mein short story concept.
+2. Idea Name — Roman Urdu mein short story concept.
+
+Continue until number 20.
+
+Return ONLY the 20 ideas.
+"""
+
+            result = generate(ideas_prompt)
+
+            if result:
+
+                parsed_ideas = []
+
+                for line in result.splitlines():
+
+                    line = line.strip()
+
+                    if not line:
+                        continue
+
+                    match = re.match(
+                        r"^\s*\d+\s*[\.\)\-:]\s*(.+)$",
+                        line
+                    )
+
+                    if match:
+                        idea = match.group(1).strip()
+
+                        if idea:
+                            parsed_ideas.append(idea)
+
+                if len(parsed_ideas) >= 20:
+                    parsed_ideas = parsed_ideas[:20]
+
+                elif len(parsed_ideas) == 0:
+                    parsed_ideas = [
+                        line.strip()
+                        for line in result.splitlines()
+                        if line.strip()
+                    ]
+
+                st.session_state.movie_ideas = parsed_ideas
+                st.session_state.selected_movie_idea = ""
+
+                st.success(
+                    f"{len(parsed_ideas)} movie ideas generated!"
+                )
+
+
+# ================= DISPLAY AND SELECT IDEAS =================
+
+if st.session_state.movie_ideas:
+
+    with st.container(border=True):
+
+        st.markdown("### 🎬 YOUR 20 MOVIE IDEAS")
+
+        for index, idea in enumerate(
+            st.session_state.movie_ideas,
+            start=1
+        ):
+            st.markdown(f"**{index}.** {idea}")
+
+        st.divider()
+
+        st.markdown("### 👇 CHOOSE YOUR FAVORITE IDEA")
+
+        selected_idea = st.selectbox(
+            "Select one story idea:",
+            options=["-- Select an idea --"] +
+            st.session_state.movie_ideas,
+            key="idea_selector"
+        )
+
+        if st.button(
+            "✅ USE SELECTED IDEA",
+            key="use_idea_btn"
+        ):
+
+            if selected_idea == "-- Select an idea --":
+                st.warning("Please select an idea first.")
+
+            else:
+                st.session_state["story_idea_input"] = selected_idea
+                st.session_state.selected_movie_idea = selected_idea
+
+                st.success(
+                    "Your selected idea has been added to Movie Story Idea!"
+                )
+
+        st.download_button(
+            "⬇️ DOWNLOAD ALL 20 IDEAS",
+            "\n".join(
+                f"{i}. {idea}"
+                for i, idea in enumerate(
+                    st.session_state.movie_ideas,
+                    start=1
+                )
+            ),
+            file_name="20_movie_ideas.txt"
+        )
+
+
+# ================= MOVIE SETTINGS =================
+
+st.divider()
+
+st.markdown("## 🎥 MOVIE SETTINGS")
 
 col1, col2 = st.columns(2)
 
 with col1:
-
-    title = st.text_input(
-        "Movie Title",
-        "THE LAST SUNRISE"
-    )
 
     genre = st.selectbox(
         "Movie Genre",
@@ -289,6 +452,7 @@ with col2:
         ]
     )
 
+
 # ================= ASPECT RATIO =================
 
 st.markdown("### 📐 SCENE ASPECT RATIO")
@@ -305,11 +469,18 @@ aspect_ratio = st.radio(
     key="aspect_ratio"
 )
 
+
+# ================= STORY IDEA =================
+
 story_idea = st.text_area(
     "💡 Movie Story Idea",
-    placeholder="Describe your movie idea...",
-    height=110
+    placeholder="Your selected idea will appear here. You can also write your own idea...",
+    height=110,
+    key="story_idea_input"
 )
+
+
+# ================= HERO AND VILLAIN =================
 
 col1, col2 = st.columns(2)
 
@@ -332,6 +503,7 @@ extra = st.text_area(
     placeholder="Any special requirements for your movie...",
     height=80
 )
+
 
 # ================= CONTEXT =================
 
@@ -370,6 +542,7 @@ DIALOGUE:
 Write prompts in professional English.
 """
 
+
 # ================= STORY GENERATOR =================
 
 st.divider()
@@ -378,9 +551,17 @@ st.markdown("## 📖 02 — STORY GENERATOR")
 
 if st.button("✨ GENERATE COMPLETE MOVIE STORY", key="story_btn"):
 
-    with st.spinner("Creating your Hollywood movie story..."):
+    if not title.strip():
+        st.warning("Please enter your movie title first.")
 
-        prompt = context + """
+    elif not story_idea.strip():
+        st.warning("Please select a movie idea or write your own story idea.")
+
+    else:
+
+        with st.spinner("Creating your Hollywood movie story..."):
+
+            prompt = context + """
 
 Create a complete original Hollywood movie story.
 
@@ -399,18 +580,24 @@ Include:
 Create a detailed story structure suitable
 for the selected movie duration.
 
+Follow the selected movie title and story idea carefully.
+Do not replace the selected idea with a different story.
+
+Write the complete movie story in professional English.
+
 Do not generate individual scenes yet.
 """
 
-        result = generate(prompt)
+            result = generate(prompt)
 
-        if result:
-            st.session_state.story = result
-            st.session_state.characters = ""
-            st.session_state.scenes = []
-            st.session_state.scene_number = 0
-            st.session_state.movie_context = context
-            st.session_state.movie_title = title
+            if result:
+                st.session_state.story = result
+                st.session_state.characters = ""
+                st.session_state.scenes = []
+                st.session_state.scene_number = 0
+                st.session_state.movie_context = context
+                st.session_state.movie_title = title
+
 
 if st.session_state.story:
 
@@ -428,6 +615,7 @@ if st.session_state.story:
             st.session_state.story,
             file_name="movie_story.txt"
         )
+
 
 # ================= CHARACTER BIBLE =================
 
@@ -474,6 +662,7 @@ Also describe important creatures and props.
             if result:
                 st.session_state.characters = result
 
+
 if st.session_state.characters:
 
     with st.container(border=True):
@@ -490,6 +679,7 @@ if st.session_state.characters:
             st.session_state.characters,
             file_name="character_bible.txt"
         )
+
 
 # ================= SCENE GENERATOR =================
 
@@ -512,6 +702,7 @@ with col2:
         "GENERATED SCENES",
         len(st.session_state.scenes)
     )
+
 
 if st.session_state.story:
 
@@ -569,6 +760,7 @@ Return only the scene prompt.
                     st.session_state.scenes.append(result)
                     st.session_state.scene_number = 1
                     st.rerun()
+
 
 if st.session_state.scenes:
 
@@ -654,48 +846,4 @@ Return only the scene prompt.
                     st.rerun()
 
     else:
-        st.success("All planned scenes have been generated!")
-
-# ================= DOWNLOAD ALL =================
-
-if st.session_state.scenes:
-
-    all_scenes = "\n\n".join(
-        f"SCENE {i+1}\n{scene}"
-        for i, scene in enumerate(st.session_state.scenes)
-    )
-
-    st.divider()
-
-    st.download_button(
-        "📦 DOWNLOAD ALL GENERATED SCENES",
-        all_scenes,
-        file_name="complete_movie_scenes.txt"
-    )
-
-# ================= RESET =================
-
-st.divider()
-
-if st.button("🔄 RESET MOVIE PROJECT"):
-
-    st.session_state.story = ""
-    st.session_state.characters = ""
-    st.session_state.scenes = []
-    st.session_state.scene_number = 0
-    st.session_state.movie_context = ""
-
-    st.rerun()
-
-st.markdown("""
-<div style="
-    text-align:center;
-    padding:22px;
-    color:#AAB9D4;
-    border-top:1px solid #30496E;
-">
-    🎬 AI MOVIE STUDIO<br>
-    <small>Powered by Google Gemini AI</small>
-</div>
-""", unsafe_allow_html=True)
-    
+        st.success("All planne
