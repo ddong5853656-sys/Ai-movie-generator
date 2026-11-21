@@ -359,7 +359,12 @@ if st.session_state.story:
     with st.container(border=True):
 
         st.markdown("### 🎬 YOUR MOVIE STORY")
-        st.markdown(st.session_state.story)
+
+        # COPYABLE STORY CODE BLOCK
+        st.code(
+            st.session_state.story,
+            language=None
+        )
 
         st.download_button(
             "⬇️ DOWNLOAD MOVIE STORY",
@@ -417,7 +422,12 @@ if st.session_state.characters:
     with st.container(border=True):
 
         st.markdown("### 👤 CHARACTER BIBLE")
-        st.markdown(st.session_state.characters)
+
+        # COPYABLE CHARACTER DESCRIPTION CODE BLOCK
+        st.code(
+            st.session_state.characters,
+            language=None
+        )
 
         st.download_button(
             "⬇️ DOWNLOAD CHARACTER BIBLE",
@@ -505,7 +515,11 @@ if st.session_state.scenes:
             f"### 🎞️ SCENE {st.session_state.scene_number}"
         )
 
-        st.markdown(current)
+        # COPYABLE SCENE PROMPT CODE BLOCK
+        st.code(
+            current,
+            language=None
+        )
 
         st.download_button(
             "⬇️ DOWNLOAD THIS SCENE",
@@ -611,4 +625,4 @@ st.markdown("""
     <small>Powered by Google Gemini AI</small>
 </div>
 """, unsafe_allow_html=True)
-            
+    
