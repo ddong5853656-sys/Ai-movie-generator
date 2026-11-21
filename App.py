@@ -8,6 +8,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ================= GEMINI SECRET KEY =================
+
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception:
+    client = None
+
 # ================= DESIGN =================
 
 st.markdown("""
@@ -46,13 +54,11 @@ p, label, .stMarkdown {
     font-weight: 800 !important;
     min-height: 46px;
     width: 100%;
-    transition: 0.2s;
 }
 .stButton > button:hover,
 .stDownloadButton > button:hover {
     background: linear-gradient(100deg, #F3CD76, #FFE5A3) !important;
     color: #080E1D !important;
-    border: 1px solid #FFFFFF !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
     background: rgba(22, 42, 76, 0.65);
@@ -74,7 +80,6 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-
 # ================= SESSION STATE =================
 
 defaults = {
@@ -90,22 +95,21 @@ for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-
 # ================= GEMINI AI =================
 
 def generate(prompt):
-    api_key = st.session_state.get("gemini_key", "")
 
-    if not api_key:
-        st.error("Please enter your Gemini API Key in AI Settings.")
+    if client is None:
+        st.error(
+            "Gemini API Secret missing. "
+            "Please add GEMINI_API_KEY in Streamlit Secrets."
+        )
         return None
 
     try:
-        client = genai.Client(api_key=api_key)
-
         response = client.models.generate_content(
             model=st.session_state.get(
-                "model_name", "gemini-3.8-flash"
+                "model_name", "gemini-2.5-flash"
             ),
             contents=prompt
         )
@@ -119,7 +123,6 @@ def generate(prompt):
     except Exception as e:
         st.error(f"Gemini API Error: {e}")
         return None
-
 
 # ================= HEADER =================
 
@@ -140,24 +143,15 @@ Create Hollywood Stories • Design Characters • Generate Cinematic Scenes
 </div>
 """, unsafe_allow_html=True)
 
-
 # ================= SIDEBAR =================
 
 with st.sidebar:
 
     st.markdown("## ⚙️ AI SETTINGS")
 
-    api_key = st.text_input(
-        "Gemini API Key",
-        type="password",
-        placeholder="Enter your Gemini API Key"
-    )
-
-    st.session_state.gemini_key = api_key
-
     model = st.selectbox(
         "AI Model",
-        ["gemini-3.8-flash", "gemini-2.5-flash"]
+        ["gemini-2.5-flash", "gemini-2.5-pro"]
     )
 
     st.session_state.model_name = model
@@ -185,7 +179,6 @@ with st.sidebar:
 
     st.caption("AI MOVIE STUDIO")
     st.caption("Powered by Google Gemini")
-
 
 # ================= MOVIE SETUP =================
 
@@ -260,7 +253,6 @@ with col2:
         ]
     )
 
-
 story_idea = st.text_area(
     "💡 Movie Story Idea",
     placeholder="Describe your movie idea...",
@@ -288,7 +280,6 @@ extra = st.text_area(
     placeholder="Any special requirements for your movie...",
     height=80
 )
-
 
 # ================= CONTEXT =================
 
@@ -326,17 +317,13 @@ DIALOGUE:
 Write prompts in professional English.
 """
 
-
 # ================= STORY GENERATOR =================
 
 st.divider()
 
 st.markdown("## 📖 02 — STORY GENERATOR")
 
-if st.button(
-    "✨ GENERATE COMPLETE MOVIE STORY",
-    key="story_btn"
-):
+if st.button("✨ GENERATE COMPLETE MOVIE STORY", key="story_btn"):
 
     with st.spinner("Creating your Hollywood movie story..."):
 
@@ -372,13 +359,11 @@ Do not generate individual scenes yet.
             st.session_state.movie_context = context
             st.session_state.movie_title = title
 
-
 if st.session_state.story:
 
     with st.container(border=True):
 
         st.markdown("### 🎬 YOUR MOVIE STORY")
-
         st.markdown(st.session_state.story)
 
         st.download_button(
@@ -387,17 +372,13 @@ if st.session_state.story:
             file_name="movie_story.txt"
         )
 
-
 # ================= CHARACTER BIBLE =================
 
 st.divider()
 
 st.markdown("## 👥 03 — CHARACTER DESIGN STUDIO")
 
-if st.button(
-    "🎨 GENERATE CHARACTER BIBLE",
-    key="character_btn"
-):
+if st.button("🎨 GENERATE CHARACTER BIBLE", key="character_btn"):
 
     if not st.session_state.story:
         st.warning("Generate the movie story first.")
@@ -436,13 +417,11 @@ Also describe important creatures and props.
             if result:
                 st.session_state.characters = result
 
-
 if st.session_state.characters:
 
     with st.container(border=True):
 
         st.markdown("### 👤 CHARACTER BIBLE")
-
         st.markdown(st.session_state.characters)
 
         st.download_button(
@@ -450,7 +429,6 @@ if st.session_state.characters:
             st.session_state.characters,
             file_name="character_bible.txt"
         )
-
 
 # ================= SCENE GENERATOR =================
 
@@ -478,10 +456,7 @@ if st.session_state.story:
 
     if not st.session_state.scenes:
 
-        if st.button(
-            "🎬 GENERATE SCENE 1",
-            key="first_scene"
-        ):
+        if st.button("🎬 GENERATE SCENE 1", key="first_scene"):
 
             with st.spinner("Creating cinematic Scene 1..."):
 
@@ -524,7 +499,6 @@ Return only the scene prompt.
                     st.session_state.scenes.append(result)
                     st.session_state.scene_number = 1
                     st.rerun()
-
 
 if st.session_state.scenes:
 
@@ -600,7 +574,6 @@ Return only the scene prompt.
     else:
         st.success("All planned scenes have been generated!")
 
-
 # ================= DOWNLOAD ALL =================
 
 if st.session_state.scenes:
@@ -618,7 +591,6 @@ if st.session_state.scenes:
         file_name="complete_movie_scenes.txt"
     )
 
-
 # ================= RESET =================
 
 st.divider()
@@ -632,7 +604,6 @@ if st.button("🔄 RESET MOVIE PROJECT"):
     st.session_state.movie_context = ""
 
     st.rerun()
-
 
 st.markdown("""
 <div style="
