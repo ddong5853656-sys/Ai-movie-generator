@@ -1,3 +1,4 @@
+
 import streamlit as st
 from google import genai
 
@@ -15,6 +16,8 @@ try:
     client = genai.Client(api_key=API_KEY)
 except Exception:
     client = None
+
+MODEL_NAME = "gemini-3.8-flash"
 
 # ================= DESIGN =================
 
@@ -108,9 +111,7 @@ def generate(prompt):
 
     try:
         response = client.models.generate_content(
-            model=st.session_state.get(
-                "model_name", "gemini-2.5-flash"
-            ),
+            model=MODEL_NAME,
             contents=prompt
         )
 
@@ -148,13 +149,7 @@ Create Hollywood Stories • Design Characters • Generate Cinematic Scenes
 with st.sidebar:
 
     st.markdown("## ⚙️ AI SETTINGS")
-
-    model = st.selectbox(
-        "AI Model",
-        ["gemini-2.5-flash", "gemini-2.5-pro"]
-    )
-
-    st.session_state.model_name = model
+    st.info("AI Model: Gemini 3.8 Flash")
 
     st.divider()
 
@@ -616,3 +611,4 @@ st.markdown("""
     <small>Powered by Google Gemini AI</small>
 </div>
 """, unsafe_allow_html=True)
+            
