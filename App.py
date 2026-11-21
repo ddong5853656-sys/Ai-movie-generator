@@ -1,6 +1,7 @@
 
 import streamlit as st
 from google import genai
+import time
 
 st.set_page_config(
     page_title="AI Movie Studio",
@@ -17,7 +18,7 @@ try:
 except Exception:
     client = None
 
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-3.1-flash-lite"
 
 # ================= DESIGN =================
 
@@ -109,21 +110,60 @@ def generate(prompt):
         )
         return None
 
-    try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt
-        )
+    max_attempts = 3
 
-        if response.text:
-            return response.text
+    for attempt in range(max_attempts):
 
-        st.error("AI returned an empty response.")
-        return None
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt
+            )
 
-    except Exception as e:
-        st.error(f"Gemini API Error: {e}")
-        return None
+            if response.text:
+                return response.text
+
+            st.error("AI returned an empty response.")
+            return None
+
+        except Exception as e:
+
+            error_message = str(e).upper()
+
+            # Retry only temporary server errors
+            temporary_error = any(
+                code in error_message
+                for code in [
+                    "503",
+                    "UNAVAILABLE",
+                    "500",
+                    "INTERNAL",
+                    "504",
+                    "DEADLINE_EXCEEDED"
+                ]
+            )
+
+            if temporary_error and attempt < max_attempts - 1:
+
+                wait_seconds = 2 ** (attempt + 1)
+
+                st.warning(
+                    f"Google server busy. "
+                    f"Retrying in {wait_seconds} seconds... "
+                    f"Attempt {attempt + 2}/{max_attempts}"
+                )
+
+                time.sleep(wait_seconds)
+                continue
+
+            st.error(f"Gemini API Error: {e}")
+            return None
+
+    st.error(
+        "Google AI server is still unavailable. "
+        "Please try again later."
+    )
+    return None
 
 # ================= HEADER =================
 
@@ -149,7 +189,7 @@ Create Hollywood Stories • Design Characters • Generate Cinematic Scenes
 with st.sidebar:
 
     st.markdown("## ⚙️ AI SETTINGS")
-    st.info("AI Model: Gemini 3.8 Flash")
+    st.info("AI Model: Gemini 3.1 Flash-Lite")
 
     st.divider()
 
@@ -360,7 +400,6 @@ if st.session_state.story:
 
         st.markdown("### 🎬 YOUR MOVIE STORY")
 
-        # COPYABLE STORY CODE BLOCK
         st.code(
             st.session_state.story,
             language=None
@@ -423,7 +462,6 @@ if st.session_state.characters:
 
         st.markdown("### 👤 CHARACTER BIBLE")
 
-        # COPYABLE CHARACTER DESCRIPTION CODE BLOCK
         st.code(
             st.session_state.characters,
             language=None
@@ -515,7 +553,6 @@ if st.session_state.scenes:
             f"### 🎞️ SCENE {st.session_state.scene_number}"
         )
 
-        # COPYABLE SCENE PROMPT CODE BLOCK
         st.code(
             current,
             language=None
@@ -625,4 +662,4 @@ st.markdown("""
     <small>Powered by Google Gemini AI</small>
 </div>
 """, unsafe_allow_html=True)
-    
+        
