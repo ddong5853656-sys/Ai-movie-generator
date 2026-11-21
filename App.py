@@ -170,6 +170,148 @@ def generate(prompt):
     return None
 
 
+# ================= CHARACTER LOCK INSTRUCTIONS =================
+
+CHARACTER_LOCK_RULES = """
+MANDATORY CHARACTER CONSISTENCY ENFORCEMENT:
+
+The CHARACTER BIBLE is the absolute visual source of truth.
+
+For every scene:
+
+1. Identify which established characters actually appear in that scene.
+2. Reproduce the complete locked visual description of each appearing character.
+3. Preserve the exact same face shape, facial features, apparent age,
+   skin tone, eye color, hairstyle, hair length, body structure and height.
+4. Preserve the exact costume, armor, clothing, footwear, weapons,
+   jewelry, accessories and other identifying details.
+5. Preserve distinctive scars, marks, scales, tattoos and physical features.
+6. Never redesign, reinterpret, beautify, age, de-age or randomly modify
+   an established character.
+7. Never change a character's identity between scenes.
+8. Never introduce duplicate versions of an existing character.
+9. Never invent additional characters, creatures or villains.
+10. Only include characters and creatures that actually exist in the story.
+11. Do not give one character another character's clothing, weapons or features.
+12. Keep the character's visual identity unchanged even when lighting,
+    weather, location, emotion or camera angle changes.
+
+IMPORTANT:
+The character's expression and body pose may change naturally according
+to the action, but their identity and permanent visual appearance must not.
+
+Before writing the scene, internally compare every appearing character
+against the CHARACTER BIBLE.
+
+Each scene must be independently usable as a video-generation prompt.
+Do not rely on the video generator remembering previous scenes.
+
+Include the relevant character's locked appearance directly inside
+the scene prompt. Do not replace the actual description with vague
+phrases such as "same character as before".
+"""
+
+# ================= SCENE PROMPT BUILDER =================
+
+def build_scene_prompt(
+    scene_number,
+    story,
+    characters,
+    movie_context,
+    scene_length,
+    aspect_ratio,
+    previous_scene=None
+):
+
+    continuity_section = ""
+
+    if previous_scene:
+
+        continuity_section = f"""
+PREVIOUS SCENE:
+{previous_scene}
+
+CONTINUITY REQUIREMENTS:
+
+- Begin from the exact final frame of the previous scene.
+- Maintain the established screen geography.
+- Preserve character positions, body direction and movement continuity.
+- Preserve costumes, weapons, accessories, injuries and carried objects.
+- Continue the action naturally from the previous final moment.
+- Do not repeat the previous scene's events.
+- Advance the story meaningfully.
+- Change location only when the story naturally requires it.
+- Do not create an unexplained time jump.
+- Make the transition physically and visually believable.
+"""
+
+    return f"""
+{movie_context}
+
+MOVIE STORY:
+{story}
+
+COMPLETE CHARACTER DESIGN BIBLE:
+{characters if characters else
+'No character bible has been generated yet. Use only established story details and do not invent conflicting character appearances.'}
+
+{CHARACTER_LOCK_RULES}
+
+{continuity_section}
+
+GENERATE SCENE {scene_number} ONLY.
+
+SCENE DURATION: {scene_length}
+
+ASPECT RATIO: {aspect_ratio}
+
+ASPECT RATIO RULES:
+
+- Generate specifically for {aspect_ratio}.
+- If 16:9, use horizontal widescreen composition.
+- If 9:16, use vertical portrait composition.
+- Compose character positions, action and camera framing for the selected ratio.
+- Never switch to another aspect ratio.
+
+SCENE REQUIREMENTS:
+
+1. Scene number and cinematic title.
+2. Exact location and atmosphere.
+3. Relevant locked character appearances.
+4. Exact character positions and screen geography.
+5. Body direction and gaze direction.
+6. Camera position, angle and lens perspective.
+7. Camera movement.
+8. Second-by-second action progression.
+9. Realistic physical movements and reactions.
+10. Natural dialogue only when important.
+11. Environmental details and sound atmosphere when useful.
+12. Exact final frame for continuity.
+
+CAMERA AND MOVEMENT RULES:
+
+- Use cinematic camera angles appropriate to the action.
+- Specify whether the camera is front-facing, side-facing,
+  three-quarter, overhead, low-angle or over-the-shoulder.
+- Explain the camera's physical position.
+- Characters must focus on the action, other characters or threats,
+  not randomly stare into the camera.
+- Avoid repetitive camera angles.
+- Keep movement physically believable.
+- Avoid unnatural floating, sliding, teleporting or duplicated movements.
+
+FINAL FRAME:
+
+Describe the exact final positions, body directions, expressions,
+environment and camera framing.
+
+The final frame must be suitable for the next scene.
+
+Return only the complete professional cinematic video scene prompt.
+Do not add explanations outside the scene.
+"""
+
+
 # ================= HEADER =================
 
 st.markdown("""
@@ -232,6 +374,7 @@ title = st.text_input(
     placeholder="Example: THE LAST DRAGON"
 )
 
+
 # ================= 20 MOVIE IDEAS =================
 
 st.markdown("### 💡 GENERATE 20 STORY IDEAS")
@@ -276,12 +419,6 @@ IDEA REQUIREMENTS:
 STRICT OUTPUT FORMAT:
 Write exactly 20 numbered ideas.
 Each idea must be on a separate line.
-Use this format:
-
-1. Idea Name — Roman Urdu mein short story concept.
-2. Idea Name — Roman Urdu mein short story concept.
-
-Continue until number 20.
 
 Return ONLY the 20 ideas.
 """
@@ -334,7 +471,7 @@ if st.session_state.movie_ideas:
 
     with st.container(border=True):
 
-        st.markdown("### 🎬 YOUR 20 MOVIE IDEAS")
+        st.markdown("### 🎬 YOUR MOVIE IDEAS")
 
         for index, idea in enumerate(
             st.session_state.movie_ideas,
@@ -583,6 +720,9 @@ for the selected movie duration.
 Follow the selected movie title and story idea carefully.
 Do not replace the selected idea with a different story.
 
+Keep the story internally consistent.
+Do not introduce random characters or villains.
+
 Write the complete movie story in professional English.
 
 Do not generate individual scenes yet.
@@ -637,30 +777,49 @@ if st.button("🎨 GENERATE CHARACTER BIBLE", key="character_btn"):
 MOVIE STORY:
 {st.session_state.story}
 
-Create a detailed character design bible.
+Create a detailed and highly specific CHARACTER DESIGN BIBLE.
 
 For every important character include:
 
-- Exact age
-- Face and facial features
-- Hair and eye color
-- Body structure
-- Clothing and footwear
-- Accessories and weapons
-- Personality
-- Abilities
-- Character purpose
+1. Exact age and apparent age.
+2. Face shape and facial features.
+3. Skin tone and texture.
+4. Exact eye color and distinctive eye features.
+5. Hair color, length, texture and hairstyle.
+6. Exact height and body structure.
+7. Clothing, armor and footwear.
+8. Accessories, jewelry and weapons.
+9. Scars, marks, tattoos or unique physical details.
+10. Personality and behavior.
+11. Abilities and limitations.
+12. Character purpose in the story.
 
-Write a locked visual description for each character.
+For each character, write a complete LOCKED VISUAL DESCRIPTION
+that can be copied directly into an independent AI video prompt.
 
-All characters must look identical in every scene.
-Also describe important creatures and props.
+IMPORTANT CHARACTER BIBLE RULES:
+
+- Give each character a clearly distinct identity.
+- Avoid vague descriptions.
+- Do not leave important visual details undefined.
+- Do not give the same appearance to different characters.
+- Keep the design realistic and suitable for the selected visual style.
+- Describe only characters that exist in the movie story.
+- Include important creatures and recurring props in separate sections.
+- Clearly identify permanent appearance details that must never change.
+
+The CHARACTER BIBLE will be the permanent visual source of truth
+for every scene generated later.
+
+Write in professional English.
 """
 
             result = generate(prompt)
 
             if result:
                 st.session_state.characters = result
+                st.session_state.scenes = []
+                st.session_state.scene_number = 0
 
 
 if st.session_state.characters:
@@ -712,47 +871,14 @@ if st.session_state.story:
 
             with st.spinner("Creating cinematic Scene 1..."):
 
-                prompt = st.session_state.movie_context + f"""
-
-MOVIE STORY:
-{st.session_state.story}
-
-CHARACTER BIBLE:
-{st.session_state.characters}
-
-Generate SCENE 1 ONLY.
-
-Duration: {scene_length}
-
-ASPECT RATIO: {aspect_ratio}
-
-IMPORTANT FORMAT RULES:
-- Generate the scene specifically for {aspect_ratio}.
-- If 16:9, use horizontal widescreen composition.
-- If 9:16, use vertical portrait composition.
-- Compose characters, action and camera framing for the selected ratio.
-- Do not change the selected aspect ratio.
-
-Include:
-
-1. Scene title and number.
-2. Exact location and atmosphere.
-3. Character appearance and positions.
-4. Body direction and screen geography.
-5. Camera angle and lens perspective.
-6. Camera movement.
-7. Second-by-second action progression.
-8. Realistic physical movements and reactions.
-9. Natural dialogue only when important.
-10. Exact final frame.
-
-Use professional cinematic video prompt language.
-
-Do not let characters look directly into the camera.
-The final frame must be suitable for Scene 2 continuity.
-
-Return only the scene prompt.
-"""
+                prompt = build_scene_prompt(
+                    scene_number=1,
+                    story=st.session_state.story,
+                    characters=st.session_state.characters,
+                    movie_context=st.session_state.movie_context,
+                    scene_length=scene_length,
+                    aspect_ratio=aspect_ratio
+                )
 
                 result = generate(prompt)
 
@@ -794,49 +920,15 @@ if st.session_state.scenes:
 
             with st.spinner("Creating next continuous scene..."):
 
-                prompt = st.session_state.movie_context + f"""
-
-MOVIE STORY:
-{st.session_state.story}
-
-CHARACTER BIBLE:
-{st.session_state.characters}
-
-PREVIOUS SCENE:
-{previous}
-
-Generate SCENE {st.session_state.scene_number + 1} ONLY.
-
-Duration: {scene_length}
-
-ASPECT RATIO: {aspect_ratio}
-
-IMPORTANT FORMAT RULES:
-- Maintain the selected {aspect_ratio} aspect ratio.
-- If 16:9, use horizontal widescreen composition.
-- If 9:16, use vertical portrait composition.
-- Compose all action and camera framing for the selected ratio.
-- Never switch to another aspect ratio.
-
-CONTINUITY IS CRITICAL:
-
-- Begin from the exact previous final frame.
-- Preserve character faces and appearance.
-- Preserve costumes and accessories.
-- Preserve injuries and props.
-- Preserve physical positions and action.
-- Do not repeat the previous scene.
-- Advance the story naturally.
-- Use new locations when appropriate.
-- Specify camera angle and movement.
-- Describe second-by-second action.
-- Include realistic movement and reactions.
-- Keep dialogue purposeful.
-- No direct camera eye contact.
-- End with an exact final frame.
-
-Return only the scene prompt.
-"""
+                prompt = build_scene_prompt(
+                    scene_number=st.session_state.scene_number + 1,
+                    story=st.session_state.story,
+                    characters=st.session_state.characters,
+                    movie_context=st.session_state.movie_context,
+                    scene_length=scene_length,
+                    aspect_ratio=aspect_ratio,
+                    previous_scene=previous
+                )
 
                 result = generate(prompt)
 
@@ -845,4 +937,76 @@ Return only the scene prompt.
                     st.session_state.scene_number += 1
                     st.rerun()
 
-    st.success("All planned scenes have been generated!")
+    else:
+
+        st.success(
+            "🎉 All planned movie scenes have been generated successfully!"
+        )
+
+    # ================= DOWNLOAD ALL SCENES =================
+
+    all_scenes_text = "\n\n".join(
+        f"================ SCENE {index} ================\n\n{scene}"
+        for index, scene in enumerate(
+            st.session_state.scenes,
+            start=1
+        )
+    )
+
+    st.download_button(
+        "⬇️ DOWNLOAD ALL GENERATED SCENES",
+        all_scenes_text,
+        file_name="all_movie_scenes.txt",
+        mime="text/plain"
+    )
+
+
+# ================= PROJECT PROGRESS =================
+
+if st.session_state.story:
+
+    st.divider()
+    st.markdown("### 📊 MOVIE PROJECT PROGRESS")
+
+    progress = min(
+        len(st.session_state.scenes) / max(scene_count, 1),
+        1.0
+    )
+
+    st.progress(progress)
+
+    st.write(
+        f"Generated {len(st.session_state.scenes)} "
+        f"out of {scene_count} planned scenes."
+    )
+
+
+# ================= RESET PROJECT =================
+
+st.divider()
+
+st.markdown("## 🔄 PROJECT CONTROLS")
+
+if st.button("🗑️ RESET ENTIRE MOVIE PROJECT", key="reset_project"):
+
+    keys_to_reset = [
+        "story",
+        "characters",
+        "scenes",
+        "scene_number",
+        "movie_context",
+        "movie_ideas",
+        "selected_movie_idea",
+        "story_idea_input"
+    ]
+
+    for key in keys_to_reset:
+        if key in st.session_state:
+            if key == "scenes" or key == "movie_ideas":
+                st.session_state[key] = []
+            elif key == "scene_number":
+                st.session_state[key] = 0
+            else:
+                st.session_state[key] = ""
+
+    st.rerun()
