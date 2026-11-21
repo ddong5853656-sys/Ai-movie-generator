@@ -172,79 +172,102 @@ def generate(prompt):
 # ================= CHARACTER LOCK INSTRUCTIONS =================
 
 
+
 CHARACTER_LOCK_RULES = """
-STRICT CHARACTER BIBLE ENFORCEMENT — HIGHEST PRIORITY:
+STRICT CHARACTER BIBLE ENFORCEMENT — ABSOLUTE PRIORITY:
 
 The complete CHARACTER BIBLE is the permanent source of truth.
+Never sacrifice character consistency for shorter prompts.
 
 FOR EVERY SCENE:
 
-1. Identify every character and creature appearing in the scene.
-2. Extract their complete locked visual descriptions from the Character Bible.
-3. Include ALL permanent identifying details directly in the generated scene prompt.
-4. Never shorten, summarize or omit important visual identifiers.
+1. Identify every character and creature visibly appearing.
+2. Retrieve their complete description from the Character Bible.
+3. Include ALL permanent identifying details in the scene prompt.
+4. Never shorten, summarize, skip or silently omit any permanent detail.
+5. Do not assume that a detail is optional just because it is not important to the action.
 
-PERMANENT DETAILS THAT MUST NEVER CHANGE:
+PERMANENT IDENTITY LOCK:
 
+Always preserve:
 - Exact age and apparent age.
 - Face shape, jawline and cheekbones.
 - Skin tone and permanent skin features.
 - Eye color and distinctive eye characteristics.
 - Hair color, length, texture and hairstyle.
 - Exact height and body structure.
-- Clothing design, colors and materials.
-- Footwear design and color.
-- Every permanent accessory and weapon.
-- Scars, moles, marks, tattoos and other unique features.
+- Clothing design, colors, patterns and materials.
+- Footwear design, colors and materials.
+- Every permanent accessory, weapon and equipment item.
+- Every scar, mole, mark, tattoo and unique identifying feature.
+
+CRITICAL IDENTIFIER ENFORCEMENT:
+
+Every unique identifier in the Character Bible is mandatory.
+Never omit tattoos, scars, serial numbers, jewelry, watches,
+rings, harnesses, interface ports or other identifying details.
+
+Example:
+If Elara has a small "01" serial tattoo on her inner right wrist,
+this detail must remain part of her locked identity.
+Whenever her right wrist is visible, explicitly describe the tattoo.
+Never replace it with a different number or location.
+
+If a body part is not visible in a particular shot,
+do not falsely describe it as visible.
+However, do not change or forget its permanent design.
 
 ACCESSORY ENFORCEMENT:
 
-Every established accessory must be mentioned whenever relevant,
-including watches, rings, carabiners, harnesses, jewelry and equipment.
-
-Never silently remove or replace an established accessory.
+Never silently remove, replace or redesign established accessories,
+weapons, equipment or clothing components.
 
 UNDEFINED DETAILS:
 
-If a detail is not specified in the Character Bible,
-do not invent a permanent design for it.
-Keep unspecified details neutral and consistent.
-Never randomly change their color, shape or design between scenes.
+Never invent permanent character details that are not specified.
+Keep undefined details neutral and consistent.
 
 COSTUME AND WEATHERING CONTINUITY:
 
-Distinguish permanent costume design from temporary environmental changes.
+Separate permanent clothing design from temporary dirt, snow,
+ice, blood, damage, wetness and environmental effects.
 
-Snow, ice, dirt, blood, damage and wetness may accumulate
-only when justified by the story and previous scenes.
-
-Never change the original clothing design, color or material.
+Temporary changes must follow the story and previous scenes.
+Never change original clothing colors, materials or design.
 
 CHARACTER IDENTITY:
 
 Never redesign, reinterpret, beautify, age or de-age a character.
-Never change their face, body proportions or identity.
-Never create duplicate versions of an established character.
-Never give one character another character's features.
+Never change facial features, body proportions or identity.
+Never create duplicate versions or mix features between characters.
+
+HOLOGRAM AND PROJECTION LOCK:
+
+If an established character appears as a hologram, projection,
+reflection or digital avatar, preserve their established identity.
+Do not invent a new face, hairstyle, eye design or appearance.
+Only apply projection effects such as transparency, flickering
+or distortion without changing the character's actual design.
 
 SCENE RELEVANCE:
 
-Only include characters and creatures that actually appear in the scene.
-For every appearing character, include their complete locked description.
-Do not introduce random characters or villains.
+Include only characters and creatures actually appearing in the scene.
+Do not introduce random characters, creatures or villains.
+For every appearing character, include all applicable locked details.
 
-FINAL VISUAL CHECK:
+FINAL CHARACTER BIBLE AUDIT:
 
-Before returning the scene prompt, verify that every appearing
-character's permanent visual details match the Character Bible.
+Before returning each scene prompt, compare every appearing
+character against the complete Character Bible.
 
-If any important detail is missing, add it before returning the prompt.
+Check every permanent identifier individually.
+If any applicable detail is missing, add it before returning the prompt.
 
 Every scene must work independently in an AI video generator.
 Never rely on phrases such as "same character as previous scene".
 
-The character's expression, pose and movement may change naturally,
-but their permanent visual identity must remain unchanged.
+Expressions, poses, movement and temporary environmental effects
+may change naturally. Permanent visual identity must never change.
 """
 
 
