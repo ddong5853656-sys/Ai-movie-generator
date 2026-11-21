@@ -92,7 +92,9 @@ defaults = {
     "scenes": [],
     "scene_number": 0,
     "movie_context": "",
-    "movie_title": "THE LAST SUNRISE"
+    "movie_title": "THE LAST SUNRISE",
+    "continuity_memory": "",
+    "continuity_reports": []
 }
 
 for key, value in defaults.items():
@@ -130,7 +132,6 @@ def generate(prompt):
 
             error_message = str(e).upper()
 
-            # Retry only temporary server errors
             temporary_error = any(
                 code in error_message
                 for code in [
@@ -164,6 +165,245 @@ def generate(prompt):
         "Please try again later."
     )
     return None
+
+
+# ================= CONTINUITY RESPONSE PARSER =================
+
+def extract_section(text, start_marker, end_marker=None):
+
+    start = text.find(start_marker)
+
+    if start == -1:
+        return ""
+
+    start += len(start_marker)
+
+    if end_marker:
+        end = text.find(end_marker, start)
+
+        if end == -1:
+            return text[start:].strip()
+
+        return text[start:end].strip()
+
+    return text[start:].strip()
+
+
+# ================= AUTOMATIC CONTINUITY CHECKER =================
+
+def check_continuity(scene_text, scene_number, previous_memory):
+
+    if scene_number == 1:
+        previous_info = """
+This is the FIRST scene of the movie.
+There is no previous scene.
+
+Check that the scene establishes:
+- A clear opening frame.
+- Character appearances and positions.
+- Initial props and equipment positions.
+- Location and screen geography.
+- A precise final frame for Scene 2.
+"""
+    else:
+        previous_info = f"""
+PREVIOUS SCENE CONTINUITY MEMORY:
+{previous_memory}
+
+The new scene MUST begin from the exact physical state
+described in the previous scene's ending frame.
+
+Do not invent a different starting position.
+Do not reset character positions, props or injuries.
+"""
+
+    checker_prompt = f"""
+You are a professional Hollywood film continuity supervisor
+and cinematic scene editor.
+
+Your job is to inspect and repair the supplied scene prompt
+before it is approved for the movie.
+
+CURRENT SCENE NUMBER: {scene_number}
+
+{previous_info}
+
+NEW SCENE PROMPT TO CHECK:
+{scene_text}
+
+CHECK ALL FIVE CONTINUITY CATEGORIES:
+
+1. ENDING FRAME TO OPENING FRAME:
+For Scene 1, verify that opening and ending frames are clearly
+defined.
+For later scenes, compare the previous scene's exact ending
+frame with this scene's opening frame.
+The new scene must continue naturally from that exact moment.
+
+2. CHARACTER APPEARANCE:
+Check exact face, age, hairstyle, hair color, eye color,
+body structure, clothing, footwear, accessories and injuries.
+No unexplained changes are allowed.
+
+3. PROPS AND EQUIPMENT:
+Check weapons, bags, tools, vehicles and other objects.
+Preserve which hand holds each object and its physical position.
+No unexplained disappearance, duplication or teleportation.
+
+4. LOCATION AND ENVIRONMENT:
+Check location, surroundings, weather, lighting and geography.
+A location change is allowed ONLY when the scene describes
+a believable transition or passage of time.
+
+5. MOVEMENT AND CAMERA DIRECTION:
+Check character movement direction, body orientation,
+screen geography, camera position and action direction.
+Maintain believable cinematic screen continuity.
+
+IMPORTANT HOLLYWOOD RULES:
+
+- The movie must feel like one continuous professionally edited film.
+- Do not make scenes feel like unrelated video clips.
+- Do not unnecessarily repeat the previous scene.
+- Camera angles may change naturally, but physical continuity
+  must remain correct.
+- Do not change the story or invent new characters.
+- Do not remove important actions.
+- Preserve the original scene's creative intention.
+- If any continuity problem exists, rewrite the scene prompt
+  to correct it before approving.
+- The final scene must contain a precise ending frame.
+- For every scene after Scene 1, clearly describe how its
+  opening frame continues from the previous ending frame.
+
+UPDATED CONTINUITY MEMORY:
+
+After checking and repairing the scene, create a concise but
+detailed continuity record for the NEXT scene.
+
+Include:
+- Exact final frame composition.
+- Every character's exact position and body direction.
+- Character appearance and current injuries.
+- Clothing condition.
+- Props and equipment, including which hand holds them.
+- Exact location and environment.
+- Movement direction and current action.
+- Camera position and screen geography.
+- Any unresolved action that must continue.
+
+OUTPUT FORMAT IS STRICT.
+Return these exact section headings:
+
+CONTINUITY_STATUS:
+PASS or REPAIRED or FAIL
+
+CONTINUITY_REPORT:
+Explain what was checked and what was corrected.
+Mention all five categories.
+
+FINAL_SCENE_PROMPT:
+Write the complete final approved scene prompt here.
+Do not shorten it.
+
+UPDATED_CONTINUITY_MEMORY:
+Write the complete continuity record for the next scene.
+
+If you cannot correct a critical continuity problem,
+return FAIL and explain why.
+"""
+
+    result = generate(checker_prompt)
+
+    if not result:
+        return None
+
+    status = extract_section(
+        result,
+        "CONTINUITY_STATUS:",
+        "CONTINUITY_REPORT:"
+    ).upper()
+
+    report = extract_section(
+        result,
+        "CONTINUITY_REPORT:",
+        "FINAL_SCENE_PROMPT:"
+    )
+
+    final_scene = extract_section(
+        result,
+        "FINAL_SCENE_PROMPT:",
+        "UPDATED_CONTINUITY_MEMORY:"
+    )
+
+    updated_memory = extract_section(
+        result,
+        "UPDATED_CONTINUITY_MEMORY:"
+    )
+
+    status = status.splitlines()[0].strip() if status else ""
+
+    if not final_scene or not updated_memory:
+        st.error(
+            "Continuity Checker returned an incomplete response. "
+            "Scene was not saved. Please try again."
+        )
+        return None
+
+    if "FAIL" in status:
+        st.error("Continuity check FAILED. Scene was not saved.")
+        st.warning(report or "The checker found an unresolved problem.")
+        return None
+
+    if "PASS" not in status and "REPAIRED" not in status:
+        st.error(
+            "Continuity status was unclear. "
+            "Scene was not saved."
+        )
+        return None
+
+    return {
+        "scene": final_scene,
+        "memory": updated_memory,
+        "status": status,
+        "report": report
+    }
+
+
+# ================= SCENE APPROVAL PROCESS =================
+
+def approve_scene(scene_text, scene_number):
+
+    previous_memory = st.session_state.continuity_memory
+
+    with st.spinner(
+        f"Checking Scene {scene_number} continuity..."
+    ):
+
+        checked = check_continuity(
+            scene_text,
+            scene_number,
+            previous_memory
+        )
+
+    if not checked:
+        return False
+
+    # Save only after continuity approval
+    st.session_state.scenes.append(checked["scene"])
+    st.session_state.scene_number = scene_number
+
+    # Update memory for the next scene
+    st.session_state.continuity_memory = checked["memory"]
+
+    st.session_state.continuity_reports.append({
+        "scene": scene_number,
+        "status": checked["status"],
+        "report": checked["report"]
+    })
+
+    return True
+
 
 # ================= HEADER =================
 
@@ -212,8 +452,16 @@ with st.sidebar:
 
     st.divider()
 
+    st.markdown("### 🎞️ CONTINUITY SYSTEM")
+    st.success("Automatic Continuity Checker: ON")
+    st.caption("Master Continuity Memory: ON")
+    st.caption("Automatic Scene Repair: ON")
+
+    st.divider()
+
     st.caption("AI MOVIE STUDIO")
     st.caption("Powered by Google Gemini")
+
 
 # ================= MOVIE SETUP =================
 
@@ -316,6 +564,7 @@ extra = st.text_area(
     height=80
 )
 
+
 # ================= CONTEXT =================
 
 context = f"""
@@ -351,6 +600,7 @@ DIALOGUE:
 
 Write prompts in professional English.
 """
+
 
 # ================= STORY GENERATOR =================
 
@@ -393,6 +643,8 @@ Do not generate individual scenes yet.
             st.session_state.scene_number = 0
             st.session_state.movie_context = context
             st.session_state.movie_title = title
+            st.session_state.continuity_memory = ""
+            st.session_state.continuity_reports = []
 
 if st.session_state.story:
 
@@ -410,6 +662,7 @@ if st.session_state.story:
             st.session_state.story,
             file_name="movie_story.txt"
         )
+
 
 # ================= CHARACTER BIBLE =================
 
@@ -473,6 +726,7 @@ if st.session_state.characters:
             file_name="character_bible.txt"
         )
 
+
 # ================= SCENE GENERATOR =================
 
 st.divider()
@@ -491,9 +745,51 @@ with col1:
 
 with col2:
     st.metric(
-        "GENERATED SCENES",
+        "APPROVED SCENES",
         len(st.session_state.scenes)
     )
+
+st.markdown("### 🔗 MASTER CONTINUITY SYSTEM")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric(
+        "CONTINUITY CHECKS",
+        len(st.session_state.continuity_reports)
+    )
+
+with col2:
+    st.metric(
+        "SCENES REMAINING",
+        max(0, scene_count - len(st.session_state.scenes))
+    )
+
+if st.session_state.continuity_reports:
+
+    with st.expander("📋 VIEW CONTINUITY CHECK REPORTS"):
+
+        for report in st.session_state.continuity_reports:
+
+            st.markdown(
+                f"**Scene {report['scene']} — {report['status']}**"
+            )
+
+            st.write(report["report"])
+
+            st.divider()
+
+if st.session_state.continuity_memory:
+
+    with st.expander("🧠 VIEW MASTER CONTINUITY MEMORY"):
+
+        st.code(
+            st.session_state.continuity_memory,
+            language=None
+        )
+
+
+# ================= FIRST SCENE =================
 
 if st.session_state.story:
 
@@ -515,6 +811,8 @@ Generate SCENE 1 ONLY.
 
 Duration: {scene_length}
 
+Create a professional Hollywood movie scene.
+
 Include:
 
 1. Scene title and number.
@@ -526,140 +824,28 @@ Include:
 7. Second-by-second action progression.
 8. Realistic physical movements and reactions.
 9. Natural dialogue only when important.
-10. Exact final frame.
+10. A precise opening frame.
+11. A precise final frame.
 
-Use professional cinematic video prompt language.
+HOLLYWOOD CINEMATIC RULES:
 
-Do not let characters look directly into the camera.
-The final frame must be suitable for Scene 2 continuity.
+- Establish the physical geography clearly.
+- Use professional film shot composition.
+- Make the action feel natural and physically believable.
+- Do not let characters look directly into the camera.
+- Avoid random character or prop changes.
+- End with a detailed exact frame that Scene 2 can continue from.
 
-Return only the scene prompt.
+Return only the complete scene prompt.
 """
 
                 result = generate(prompt)
 
                 if result:
-                    st.session_state.scenes.append(result)
-                    st.session_state.scene_number = 1
-                    st.rerun()
 
-if st.session_state.scenes:
+                    approved = approve_scene(
+                        result,
+                        1
+                    )
 
-    current = st.session_state.scenes[-1]
-
-    with st.container(border=True):
-
-        st.markdown(
-            f"### 🎞️ SCENE {st.session_state.scene_number}"
-        )
-
-        st.code(
-            current,
-            language=None
-        )
-
-        st.download_button(
-            "⬇️ DOWNLOAD THIS SCENE",
-            current,
-            file_name=f"scene_{st.session_state.scene_number}.txt"
-        )
-
-    if st.session_state.scene_number < scene_count:
-
-        if st.button(
-            "➡️ GENERATE NEXT SCENE",
-            key=f"next_{st.session_state.scene_number}"
-        ):
-
-            previous = st.session_state.scenes[-1]
-
-            with st.spinner("Creating next continuous scene..."):
-
-                prompt = st.session_state.movie_context + f"""
-
-MOVIE STORY:
-{st.session_state.story}
-
-CHARACTER BIBLE:
-{st.session_state.characters}
-
-PREVIOUS SCENE:
-{previous}
-
-Generate SCENE {st.session_state.scene_number + 1} ONLY.
-
-Duration: {scene_length}
-
-CONTINUITY IS CRITICAL:
-
-- Begin from the exact previous final frame.
-- Preserve character faces and appearance.
-- Preserve costumes and accessories.
-- Preserve injuries and props.
-- Preserve physical positions and action.
-- Do not repeat the previous scene.
-- Advance the story naturally.
-- Use new locations when appropriate.
-- Specify camera angle and movement.
-- Describe second-by-second action.
-- Include realistic movement and reactions.
-- Keep dialogue purposeful.
-- No direct camera eye contact.
-- End with an exact final frame.
-
-Return only the scene prompt.
-"""
-
-                result = generate(prompt)
-
-                if result:
-                    st.session_state.scenes.append(result)
-                    st.session_state.scene_number += 1
-                    st.rerun()
-
-    else:
-        st.success("All planned scenes have been generated!")
-
-# ================= DOWNLOAD ALL =================
-
-if st.session_state.scenes:
-
-    all_scenes = "\n\n".join(
-        f"SCENE {i+1}\n{scene}"
-        for i, scene in enumerate(st.session_state.scenes)
-    )
-
-    st.divider()
-
-    st.download_button(
-        "📦 DOWNLOAD ALL GENERATED SCENES",
-        all_scenes,
-        file_name="complete_movie_scenes.txt"
-    )
-
-# ================= RESET =================
-
-st.divider()
-
-if st.button("🔄 RESET MOVIE PROJECT"):
-
-    st.session_state.story = ""
-    st.session_state.characters = ""
-    st.session_state.scenes = []
-    st.session_state.scene_number = 0
-    st.session_state.movie_context = ""
-
-    st.rerun()
-
-st.markdown("""
-<div style="
-    text-align:center;
-    padding:22px;
-    color:#AAB9D4;
-    border-top:1px solid #30496E;
-">
-    🎬 AI MOVIE STUDIO<br>
-    <small>Powered by Google Gemini AI</small>
-</div>
-""", unsafe_allow_html=True)
-        
+           
