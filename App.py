@@ -117,7 +117,6 @@ for key, value in defaults.items():
 
 # ================= AUTO SAVE SYSTEM =================
 
-@st.cache_data(experimental_allow_widgets=True)
 def get_local_storage():
     return LocalStorage()
 
