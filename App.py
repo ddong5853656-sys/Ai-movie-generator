@@ -1,4 +1,3 @@
-
 import streamlit as st
 from google import genai
 import time
@@ -172,44 +171,82 @@ def generate(prompt):
 
 # ================= CHARACTER LOCK INSTRUCTIONS =================
 
+
 CHARACTER_LOCK_RULES = """
-MANDATORY CHARACTER CONSISTENCY ENFORCEMENT:
+STRICT CHARACTER BIBLE ENFORCEMENT — HIGHEST PRIORITY:
 
-The CHARACTER BIBLE is the absolute visual source of truth.
+The complete CHARACTER BIBLE is the permanent source of truth.
 
-For every scene:
+FOR EVERY SCENE:
 
-1. Identify which established characters actually appear in that scene.
-2. Reproduce the complete locked visual description of each appearing character.
-3. Preserve the exact same face shape, facial features, apparent age,
-   skin tone, eye color, hairstyle, hair length, body structure and height.
-4. Preserve the exact costume, armor, clothing, footwear, weapons,
-   jewelry, accessories and other identifying details.
-5. Preserve distinctive scars, marks, scales, tattoos and physical features.
-6. Never redesign, reinterpret, beautify, age, de-age or randomly modify
-   an established character.
-7. Never change a character's identity between scenes.
-8. Never introduce duplicate versions of an existing character.
-9. Never invent additional characters, creatures or villains.
-10. Only include characters and creatures that actually exist in the story.
-11. Do not give one character another character's clothing, weapons or features.
-12. Keep the character's visual identity unchanged even when lighting,
-    weather, location, emotion or camera angle changes.
+1. Identify every character and creature appearing in the scene.
+2. Extract their complete locked visual descriptions from the Character Bible.
+3. Include ALL permanent identifying details directly in the generated scene prompt.
+4. Never shorten, summarize or omit important visual identifiers.
 
-IMPORTANT:
-The character's expression and body pose may change naturally according
-to the action, but their identity and permanent visual appearance must not.
+PERMANENT DETAILS THAT MUST NEVER CHANGE:
 
-Before writing the scene, internally compare every appearing character
-against the CHARACTER BIBLE.
+- Exact age and apparent age.
+- Face shape, jawline and cheekbones.
+- Skin tone and permanent skin features.
+- Eye color and distinctive eye characteristics.
+- Hair color, length, texture and hairstyle.
+- Exact height and body structure.
+- Clothing design, colors and materials.
+- Footwear design and color.
+- Every permanent accessory and weapon.
+- Scars, moles, marks, tattoos and other unique features.
 
-Each scene must be independently usable as a video-generation prompt.
-Do not rely on the video generator remembering previous scenes.
+ACCESSORY ENFORCEMENT:
 
-Include the relevant character's locked appearance directly inside
-the scene prompt. Do not replace the actual description with vague
-phrases such as "same character as before".
+Every established accessory must be mentioned whenever relevant,
+including watches, rings, carabiners, harnesses, jewelry and equipment.
+
+Never silently remove or replace an established accessory.
+
+UNDEFINED DETAILS:
+
+If a detail is not specified in the Character Bible,
+do not invent a permanent design for it.
+Keep unspecified details neutral and consistent.
+Never randomly change their color, shape or design between scenes.
+
+COSTUME AND WEATHERING CONTINUITY:
+
+Distinguish permanent costume design from temporary environmental changes.
+
+Snow, ice, dirt, blood, damage and wetness may accumulate
+only when justified by the story and previous scenes.
+
+Never change the original clothing design, color or material.
+
+CHARACTER IDENTITY:
+
+Never redesign, reinterpret, beautify, age or de-age a character.
+Never change their face, body proportions or identity.
+Never create duplicate versions of an established character.
+Never give one character another character's features.
+
+SCENE RELEVANCE:
+
+Only include characters and creatures that actually appear in the scene.
+For every appearing character, include their complete locked description.
+Do not introduce random characters or villains.
+
+FINAL VISUAL CHECK:
+
+Before returning the scene prompt, verify that every appearing
+character's permanent visual details match the Character Bible.
+
+If any important detail is missing, add it before returning the prompt.
+
+Every scene must work independently in an AI video generator.
+Never rely on phrases such as "same character as previous scene".
+
+The character's expression, pose and movement may change naturally,
+but their permanent visual identity must remain unchanged.
 """
+
 
 # ================= SCENE PROMPT BUILDER =================
 
