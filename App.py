@@ -92,7 +92,8 @@ defaults = {
     "scenes": [],
     "scene_number": 0,
     "movie_context": "",
-    "movie_title": "THE LAST SUNRISE"
+    "movie_title": "THE LAST SUNRISE",
+    "aspect_ratio": "16:9"
 }
 
 for key, value in defaults.items():
@@ -288,6 +289,22 @@ with col2:
         ]
     )
 
+# ================= ASPECT RATIO =================
+
+st.markdown("### 📐 SCENE ASPECT RATIO")
+
+aspect_ratio = st.radio(
+    "Select your video format:",
+    options=["16:9", "9:16"],
+    format_func=lambda x: (
+        "16:9 — Landscape (YouTube)"
+        if x == "16:9"
+        else "9:16 — Portrait (Shorts / TikTok)"
+    ),
+    horizontal=True,
+    key="aspect_ratio"
+)
+
 story_idea = st.text_area(
     "💡 Movie Story Idea",
     placeholder="Describe your movie idea...",
@@ -325,6 +342,7 @@ DURATION: {duration}
 ENVIRONMENT: {environment}
 SCENE LENGTH: {scene_length}
 VISUAL STYLE: {visual_style}
+ASPECT RATIO: {aspect_ratio}
 
 STORY IDEA:
 {story_idea}
@@ -515,6 +533,15 @@ Generate SCENE 1 ONLY.
 
 Duration: {scene_length}
 
+ASPECT RATIO: {aspect_ratio}
+
+IMPORTANT FORMAT RULES:
+- Generate the scene specifically for {aspect_ratio}.
+- If 16:9, use horizontal widescreen composition.
+- If 9:16, use vertical portrait composition.
+- Compose characters, action and camera framing for the selected ratio.
+- Do not change the selected aspect ratio.
+
 Include:
 
 1. Scene title and number.
@@ -589,6 +616,15 @@ PREVIOUS SCENE:
 Generate SCENE {st.session_state.scene_number + 1} ONLY.
 
 Duration: {scene_length}
+
+ASPECT RATIO: {aspect_ratio}
+
+IMPORTANT FORMAT RULES:
+- Maintain the selected {aspect_ratio} aspect ratio.
+- If 16:9, use horizontal widescreen composition.
+- If 9:16, use vertical portrait composition.
+- Compose all action and camera framing for the selected ratio.
+- Never switch to another aspect ratio.
 
 CONTINUITY IS CRITICAL:
 
