@@ -131,7 +131,6 @@ if "saved_project_loaded" not in st.session_state:
 
 if not st.session_state.saved_project_loaded:
     saved_data = localS.getItem(SAVE_KEY)
-    )
 
     if saved_data:
         try:
