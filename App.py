@@ -115,6 +115,12 @@ for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
+# ================= AUTO SAVE SYSTEM =================
+
+localS = LocalStorage()
+
+SAVE_KEY = "ai_movie_studio_projects"
+
 # ================= GEMINI AI =================
 
 def generate(prompt):
