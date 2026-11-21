@@ -117,7 +117,11 @@ for key, value in defaults.items():
 
 # ================= AUTO SAVE SYSTEM =================
 
-localS = LocalStorage()
+@st.cache_data(experimental_allow_widgets=True)
+def get_local_storage():
+    return LocalStorage()
+
+localS = get_local_storage()
 
 SAVE_KEY = "ai_movie_studio_projects"
 
