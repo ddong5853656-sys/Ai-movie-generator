@@ -125,6 +125,31 @@ localS = get_local_storage()
 
 SAVE_KEY = "ai_movie_studio_projects"
 
+# ================= LOAD SAVED PROJECT =================
+
+if "saved_project_loaded" not in st.session_state:
+    st.session_state.saved_project_loaded = False
+
+if not st.session_state.saved_project_loaded:
+    saved_data = localS.getItem(
+        SAVE_KEY,
+        key="load_saved_movie_project"
+    )
+
+    if saved_data:
+        try:
+            if isinstance(saved_data, str):
+                saved_data = json.loads(saved_data)
+
+            for key, value in saved_data.items():
+                if key in st.session_state:
+                    st.session_state[key] = value
+
+        except Exception:
+            pass
+
+    st.session_state.saved_project_loaded = True
+    
 # ================= GEMINI AI =================
 
 def generate(prompt):
