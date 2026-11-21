@@ -1,76 +1,201 @@
 import streamlit as st
-from openai import OpenAI
+from google import genai
 
 st.set_page_config(
-    page_title="AI Movie Prompt Generator",
+    page_title="AI Movie Studio",
     page_icon="🎬",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("🎬 AI Movie Prompt Generator")
-st.caption("Hollywood-style cinematic stories and AI video prompts")
+# ================= DESIGN =================
 
-with st.sidebar:
-    st.header("AI Settings")
-    api_key = st.text_input("OpenAI API Key", type="password")
-    model = st.text_input("AI Model", value="gpt-4o-mini")
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #080E1D, #111C35, #10172B);
+    color: #F4F6FC;
+}
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #101C36, #080F20);
+    border-right: 1px solid #293D62;
+}
+h1, h2, h3 {
+    color: #F3C66A !important;
+}
+p, label, .stMarkdown {
+    color: #E0E8F8;
+}
+.stTextInput input, .stTextArea textarea,
+.stSelectbox div[data-baseweb="select"] > div,
+.stNumberInput input {
+    background-color: #10264A !important;
+    color: white !important;
+    border: 1px solid #34547F !important;
+    border-radius: 10px !important;
+}
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: #A9B9D2 !important;
+}
+.stButton > button, .stDownloadButton > button {
+    background: linear-gradient(100deg, #B77A25, #F3CD76) !important;
+    color: #10172B !important;
+    border: none !important;
+    border-radius: 11px !important;
+    font-weight: 800 !important;
+    min-height: 46px;
+    width: 100%;
+    transition: 0.2s;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    background: linear-gradient(100deg, #F3CD76, #FFE5A3) !important;
+    color: #080E1D !important;
+    border: 1px solid #FFFFFF !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(22, 42, 76, 0.65);
+    border: 1px solid #30496E;
+    border-radius: 15px;
+}
+div[data-testid="stMetric"] {
+    background: #142847;
+    border: 1px solid #38567F;
+    padding: 14px;
+    border-radius: 12px;
+}
+hr {
+    border-color: #30496E;
+}
+.stProgress > div > div {
+    background-color: #E6B64D;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    st.divider()
-    character_lock = st.checkbox(
-        "Character consistency lock",
-        value=True
-    )
-    cinematic_style = st.checkbox(
-        "Photorealistic Hollywood style",
-        value=True
-    )
-    sparse_dialogue = st.checkbox(
-        "Sparse purposeful dialogue",
-        value=True
-    )
 
+# ================= SESSION STATE =================
+
+defaults = {
+    "story": "",
+    "characters": "",
+    "scenes": [],
+    "scene_number": 0,
+    "movie_context": "",
+    "movie_title": "THE LAST SUNRISE"
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+
+# ================= GEMINI AI =================
 
 def generate(prompt):
+    api_key = st.session_state.get("gemini_key", "")
+
     if not api_key:
-        st.error("Please enter your OpenAI API key in the sidebar.")
+        st.error("Please enter your Gemini API Key in AI Settings.")
         return None
 
     try:
-        client = OpenAI(api_key=api_key)
+        client = genai.Client(api_key=api_key)
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert Hollywood movie writer, "
-                        "character designer and cinematic AI video "
-                        "prompt engineer. Create original, detailed, "
-                        "professional cinematic content."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.8
+        response = client.models.generate_content(
+            model=st.session_state.get(
+                "model_name", "gemini-3.8-flash"
+            ),
+            contents=prompt
         )
 
-        return response.choices[0].message.content
+        if response.text:
+            return response.text
+
+        st.error("AI returned an empty response.")
+        return None
 
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Gemini API Error: {e}")
         return None
 
 
-st.header("1. Movie Setup")
+# ================= HEADER =================
 
-col1, col2, col3 = st.columns(3)
+st.markdown("""
+<div style="
+    background:linear-gradient(110deg,#172B50,#263C60);
+    border:1px solid #49668F;
+    border-radius:18px;
+    padding:24px;
+    margin-bottom:20px;
+">
+<h1 style="margin:0;color:#F3C66A!important;">
+🎬 AI MOVIE STUDIO
+</h1>
+<p style="margin-top:8px;color:#D5E1F5;">
+Create Hollywood Stories • Design Characters • Generate Cinematic Scenes
+</p>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ================= SIDEBAR =================
+
+with st.sidebar:
+
+    st.markdown("## ⚙️ AI SETTINGS")
+
+    api_key = st.text_input(
+        "Gemini API Key",
+        type="password",
+        placeholder="Enter your Gemini API Key"
+    )
+
+    st.session_state.gemini_key = api_key
+
+    model = st.selectbox(
+        "AI Model",
+        ["gemini-3.8-flash", "gemini-2.5-flash"]
+    )
+
+    st.session_state.model_name = model
+
+    st.divider()
+
+    st.markdown("### 🎥 Movie Settings")
+
+    lock = st.checkbox(
+        "Character Consistency Lock",
+        value=True
+    )
+
+    realistic = st.checkbox(
+        "Hollywood Photorealism",
+        value=True
+    )
+
+    dialogue = st.checkbox(
+        "Sparse Natural Dialogue",
+        value=True
+    )
+
+    st.divider()
+
+    st.caption("AI MOVIE STUDIO")
+    st.caption("Powered by Google Gemini")
+
+
+# ================= MOVIE SETUP =================
+
+st.markdown("## 🎞️ 01 — MOVIE CREATOR")
+
+col1, col2 = st.columns(2)
 
 with col1:
-    movie_title = st.text_input(
+
+    title = st.text_input(
         "Movie Title",
         "THE LAST SUNRISE"
     )
@@ -80,18 +205,18 @@ with col1:
         [
             "Sci-Fi Action",
             "Fantasy Action",
-            "Survival",
             "Adventure",
-            "Mystery Thriller",
+            "Survival",
             "Horror",
-            "Action",
+            "Mystery Thriller",
+            "Epic War",
+            "Romance",
             "Custom"
         ]
     )
 
-with col2:
     duration = st.selectbox(
-        "Story Duration",
+        "Movie Duration",
         [
             "5 minutes",
             "10 minutes",
@@ -100,176 +225,190 @@ with col2:
             "30 minutes",
             "45 minutes",
             "60 minutes"
-        ]
+        ],
+        index=4
     )
+
+with col2:
 
     environment = st.selectbox(
-        "Environment",
+        "Movie Environment",
         [
-            "Futuristic Earth",
-            "Jungle",
+            "Multiple Locations",
+            "Futuristic City",
+            "Dense Jungle",
             "Desert",
             "Mountains",
-            "Island",
             "Ocean",
-            "Ancient World",
-            "Multiple Locations"
+            "Ancient Kingdom",
+            "Magical World"
         ]
     )
 
-with col3:
-    scene_duration = st.selectbox(
-        "Scene Duration",
+    scene_length = st.selectbox(
+        "Video Scene Duration",
         ["10 seconds", "15 seconds", "20 seconds"]
     )
 
     visual_style = st.selectbox(
-        "Visual Style",
+        "Visual Quality",
         [
-            "Photorealistic Hollywood",
-            "Epic Cinematic Realism",
-            "Grounded Realistic Action"
+            "Realistic Hollywood Cinematic",
+            "Epic Fantasy Realism",
+            "Photorealistic Action",
+            "Dark Cinematic Thriller"
         ]
     )
 
+
 story_idea = st.text_area(
-    "Story Idea",
-    height=120,
-    value=(
-        "In the future, Earth's natural sun begins to dim. "
-        "Humanity builds an artificial sun, but a ruthless "
-        "industrial ruler takes control of its energy."
+    "💡 Movie Story Idea",
+    placeholder="Describe your movie idea...",
+    height=110
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    hero = st.text_area(
+        "🦸 Hero / Heroine Details",
+        placeholder="Age, face, hair, clothes, abilities...",
+        height=100
     )
+
+with col2:
+    villain = st.text_area(
+        "👹 Villain Details",
+        placeholder="Appearance, powers, motivation...",
+        height=100
+    )
+
+extra = st.text_area(
+    "📝 Additional Instructions",
+    placeholder="Any special requirements for your movie...",
+    height=80
 )
 
-hero_details = st.text_area(
-    "Hero / Heroine Details",
-    placeholder="Age, appearance, clothing, personality, powers..."
-)
 
-villain_details = st.text_area(
-    "Villain Details",
-    placeholder="Appearance, motivation, powers and purpose..."
-)
+# ================= CONTEXT =================
 
-extra_instructions = st.text_area(
-    "Additional Instructions",
-    placeholder="Anything else you want in your movie..."
-)
-
-movie_context = f"""
-MOVIE TITLE: {movie_title}
+context = f"""
+MOVIE TITLE: {title}
 GENRE: {genre}
 DURATION: {duration}
 ENVIRONMENT: {environment}
-SCENE LENGTH: {scene_duration}
+SCENE LENGTH: {scene_length}
 VISUAL STYLE: {visual_style}
 
 STORY IDEA:
 {story_idea}
 
 HERO:
-{hero_details}
+{hero or 'Create an original protagonist.'}
 
 VILLAIN:
-{villain_details}
+{villain or 'Create an original antagonist.'}
 
-ADDITIONAL INSTRUCTIONS:
-{extra_instructions}
+ADDITIONAL RULES:
+{extra}
 
-CHARACTER CONSISTENCY:
-{character_lock}
+CHARACTER LOCK:
+{lock}. Maintain exact face, age, body, hair,
+clothing, accessories and appearance.
 
-CINEMATIC STYLE:
-{cinematic_style}
+VISUAL REALISM:
+{realistic}. Use realistic lighting, natural textures
+and physically believable movements.
 
 DIALOGUE:
-{sparse_dialogue}
+{dialogue}. Keep dialogue purposeful and natural.
+
+Write prompts in professional English.
 """
 
-if "story" not in st.session_state:
-    st.session_state.story = ""
 
-if "characters" not in st.session_state:
-    st.session_state.characters = ""
-
-if "scenes" not in st.session_state:
-    st.session_state.scenes = []
-
-if "scene_number" not in st.session_state:
-    st.session_state.scene_number = 0
-
+# ================= STORY GENERATOR =================
 
 st.divider()
-st.header("2. Generate Complete Movie Story")
+
+st.markdown("## 📖 02 — STORY GENERATOR")
 
 if st.button(
-    "✨ Generate Movie Story",
-    type="primary",
-    use_container_width=True
+    "✨ GENERATE COMPLETE MOVIE STORY",
+    key="story_btn"
 ):
 
-    prompt = movie_context + """
+    with st.spinner("Creating your Hollywood movie story..."):
 
-Create an original Hollywood-style cinematic movie story.
+        prompt = context + """
+
+Create a complete original Hollywood movie story.
 
 Include:
 
-1. Powerful opening hook
-2. Main characters
-3. Character motivations
-4. Central conflict
-5. Suspense and action escalation
-6. Original twists
-7. Emotional moments
-8. Multiple interesting locations
-9. Powerful climax
-10. Satisfying ending
+1. Powerful opening hook.
+2. Main characters and motivations.
+3. Central conflict.
+4. Suspense and action.
+5. Original plot twists.
+6. Emotional moments.
+7. Multiple interesting locations.
+8. Major climax.
+9. Satisfying ending.
 
-Write a detailed story outline suitable for the selected duration.
+Create a detailed story structure suitable
+for the selected movie duration.
 
-Do NOT generate individual video scenes yet.
+Do not generate individual scenes yet.
 """
 
-    result = generate(prompt)
+        result = generate(prompt)
 
-    if result:
-        st.session_state.story = result
-        st.session_state.characters = ""
-        st.session_state.scenes = []
-        st.session_state.scene_number = 0
+        if result:
+            st.session_state.story = result
+            st.session_state.characters = ""
+            st.session_state.scenes = []
+            st.session_state.scene_number = 0
+            st.session_state.movie_context = context
+            st.session_state.movie_title = title
 
 
 if st.session_state.story:
 
-    st.subheader("📖 Movie Story")
+    with st.container(border=True):
 
-    st.markdown(st.session_state.story)
+        st.markdown("### 🎬 YOUR MOVIE STORY")
 
-    st.download_button(
-        "Download Story",
-        st.session_state.story,
-        file_name="movie_story.txt"
-    )
+        st.markdown(st.session_state.story)
 
+        st.download_button(
+            "⬇️ DOWNLOAD MOVIE STORY",
+            st.session_state.story,
+            file_name="movie_story.txt"
+        )
+
+
+# ================= CHARACTER BIBLE =================
 
 st.divider()
-st.header("3. Character Design Bible")
+
+st.markdown("## 👥 03 — CHARACTER DESIGN STUDIO")
 
 if st.button(
-    "👥 Generate Character Designs",
-    use_container_width=True
+    "🎨 GENERATE CHARACTER BIBLE",
+    key="character_btn"
 ):
 
     if not st.session_state.story:
-        st.warning("First generate your movie story.")
+        st.warning("Generate the movie story first.")
 
     else:
 
-        prompt = movie_context + f"""
+        with st.spinner("Designing movie characters..."):
+
+            prompt = st.session_state.movie_context + f"""
 
 MOVIE STORY:
-
 {st.session_state.story}
 
 Create a detailed character design bible.
@@ -277,217 +416,232 @@ Create a detailed character design bible.
 For every important character include:
 
 - Exact age
-- Facial appearance
-- Hair
-- Eyes
-- Skin texture
-- Body type
-- Clothing
-- Footwear
-- Accessories
+- Face and facial features
+- Hair and eye color
+- Body structure
+- Clothing and footwear
+- Accessories and weapons
 - Personality
 - Abilities
-- Weapons
-- Movement style
 - Character purpose
 
-Create a short LOCKED VISUAL DESCRIPTION for each character.
+Write a locked visual description for each character.
 
-Characters must look exactly the same in every scene.
-
-Also describe important creatures, vehicles and props.
-"""
-
-        result = generate(prompt)
-
-        if result:
-            st.session_state.characters = result
-
-
-if st.session_state.characters:
-
-    st.subheader("Character Bible")
-
-    st.markdown(st.session_state.characters)
-
-    st.download_button(
-        "Download Character Bible",
-        st.session_state.characters,
-        file_name="character_bible.txt"
-    )
-
-
-st.divider()
-st.header("4. Generate Cinematic Video Scenes")
-
-st.info(
-    "Generate one scene at a time. "
-    "Each new scene continues from the previous scene's ending."
-)
-
-if st.session_state.story:
-
-    if st.button(
-        "🎥 Generate Scene 1",
-        type="primary",
-        use_container_width=True
-    ):
-
-        prompt = movie_context + f"""
-
-MOVIE STORY:
-
-{st.session_state.story}
-
-CHARACTER BIBLE:
-
-{st.session_state.characters}
-
-Generate SCENE 1 ONLY.
-
-The scene must be exactly {scene_duration}.
-
-Include:
-
-- Scene number
-- Scene title
-- Exact location
-- Time and weather
-- Atmosphere
-- Character appearance
-- Character screen positions
-- Body direction
-- Camera angle
-- Lens perspective
-- Camera movement
-- Second-by-second action
-- Realistic action and reactions
-- Important dialogue only
-- Exact final frame
-
-Do not make characters look directly into the camera.
-
-The final frame must be suitable for direct continuation
-into Scene 2.
-
-Return only the cinematic video prompt.
-"""
-
-        result = generate(prompt)
-
-        if result:
-            st.session_state.scenes = [result]
-            st.session_state.scene_number = 1
-
-
-if st.session_state.scenes:
-
-    current_scene = st.session_state.scenes[-1]
-
-    st.subheader(
-        f"🎞️ Scene {st.session_state.scene_number}"
-    )
-
-    st.markdown(current_scene)
-
-    st.download_button(
-        "Download Current Scene",
-        current_scene,
-        file_name=f"scene_{st.session_state.scene_number}.txt"
-    )
-
-    scene_count = int(
-        duration.split()[0]
-    ) * 60 // int(
-        scene_duration.split()[0]
-    )
-
-    if st.session_state.scene_number < scene_count:
-
-        if st.button(
-            "➡️ Generate Next Scene",
-            type="primary",
-            use_container_width=True
-        ):
-
-            previous_scene = st.session_state.scenes[-1]
-
-            prompt = movie_context + f"""
-
-MOVIE STORY:
-
-{st.session_state.story}
-
-CHARACTER BIBLE:
-
-{st.session_state.characters}
-
-PREVIOUS SCENE:
-
-{previous_scene}
-
-Generate SCENE {st.session_state.scene_number + 1} ONLY.
-
-CONTINUITY RULES:
-
-- Continue directly from the exact previous final frame.
-- Maintain the same character faces.
-- Maintain exact hair, clothes and accessories.
-- Maintain injuries and physical condition.
-- Maintain props and weapons.
-- Maintain location unless the story shows a transition.
-- Do not repeat the previous scene.
-- Advance the story naturally.
-- Specify camera angle and movement.
-- Specify character positions and directions.
-- Include second-by-second action.
-- Dialogue must be sparse and purposeful.
-- No characters looking directly at the camera.
-- No unexplained teleporting or transformations.
-- End with an exact final frame for the next scene.
-
-Return only the cinematic video prompt.
+All characters must look identical in every scene.
+Also describe important creatures and props.
 """
 
             result = generate(prompt)
 
             if result:
-                st.session_state.scenes.append(result)
-                st.session_state.scene_number += 1
-                st.rerun()
+                st.session_state.characters = result
 
 
-if len(st.session_state.scenes) > 1:
+if st.session_state.characters:
 
-    all_scenes = "\n\n".join(
-        [
-            f"SCENE {i+1}\n{scene}"
-            for i, scene in enumerate(
-                st.session_state.scenes
-            )
-        ]
-    )
+    with st.container(border=True):
 
-    st.download_button(
-        "📦 Download All Generated Scenes",
-        all_scenes,
-        file_name="movie_scenes.txt"
-    )
+        st.markdown("### 👤 CHARACTER BIBLE")
 
+        st.markdown(st.session_state.characters)
+
+        st.download_button(
+            "⬇️ DOWNLOAD CHARACTER BIBLE",
+            st.session_state.characters,
+            file_name="character_bible.txt"
+        )
+
+
+# ================= SCENE GENERATOR =================
 
 st.divider()
 
-if st.button("🔄 Reset Movie Project"):
+st.markdown("## 🎥 04 — CINEMATIC SCENE STUDIO")
+
+scene_count = (
+    int(duration.split()[0]) * 60
+    // int(scene_length.split()[0])
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("TOTAL MOVIE SCENES", scene_count)
+
+with col2:
+    st.metric(
+        "GENERATED SCENES",
+        len(st.session_state.scenes)
+    )
+
+if st.session_state.story:
+
+    if not st.session_state.scenes:
+
+        if st.button(
+            "🎬 GENERATE SCENE 1",
+            key="first_scene"
+        ):
+
+            with st.spinner("Creating cinematic Scene 1..."):
+
+                prompt = st.session_state.movie_context + f"""
+
+MOVIE STORY:
+{st.session_state.story}
+
+CHARACTER BIBLE:
+{st.session_state.characters}
+
+Generate SCENE 1 ONLY.
+
+Duration: {scene_length}
+
+Include:
+
+1. Scene title and number.
+2. Exact location and atmosphere.
+3. Character appearance and positions.
+4. Body direction and screen geography.
+5. Camera angle and lens perspective.
+6. Camera movement.
+7. Second-by-second action progression.
+8. Realistic physical movements and reactions.
+9. Natural dialogue only when important.
+10. Exact final frame.
+
+Use professional cinematic video prompt language.
+
+Do not let characters look directly into the camera.
+The final frame must be suitable for Scene 2 continuity.
+
+Return only the scene prompt.
+"""
+
+                result = generate(prompt)
+
+                if result:
+                    st.session_state.scenes.append(result)
+                    st.session_state.scene_number = 1
+                    st.rerun()
+
+
+if st.session_state.scenes:
+
+    current = st.session_state.scenes[-1]
+
+    with st.container(border=True):
+
+        st.markdown(
+            f"### 🎞️ SCENE {st.session_state.scene_number}"
+        )
+
+        st.markdown(current)
+
+        st.download_button(
+            "⬇️ DOWNLOAD THIS SCENE",
+            current,
+            file_name=f"scene_{st.session_state.scene_number}.txt"
+        )
+
+    if st.session_state.scene_number < scene_count:
+
+        if st.button(
+            "➡️ GENERATE NEXT SCENE",
+            key=f"next_{st.session_state.scene_number}"
+        ):
+
+            previous = st.session_state.scenes[-1]
+
+            with st.spinner("Creating next continuous scene..."):
+
+                prompt = st.session_state.movie_context + f"""
+
+MOVIE STORY:
+{st.session_state.story}
+
+CHARACTER BIBLE:
+{st.session_state.characters}
+
+PREVIOUS SCENE:
+{previous}
+
+Generate SCENE {st.session_state.scene_number + 1} ONLY.
+
+Duration: {scene_length}
+
+CONTINUITY IS CRITICAL:
+
+- Begin from the exact previous final frame.
+- Preserve character faces and appearance.
+- Preserve costumes and accessories.
+- Preserve injuries and props.
+- Preserve physical positions and action.
+- Do not repeat the previous scene.
+- Advance the story naturally.
+- Use new locations when appropriate.
+- Specify camera angle and movement.
+- Describe second-by-second action.
+- Include realistic movement and reactions.
+- Keep dialogue purposeful.
+- No direct camera eye contact.
+- End with an exact final frame.
+
+Return only the scene prompt.
+"""
+
+                result = generate(prompt)
+
+                if result:
+                    st.session_state.scenes.append(result)
+                    st.session_state.scene_number += 1
+                    st.rerun()
+
+    else:
+        st.success("All planned scenes have been generated!")
+
+
+# ================= DOWNLOAD ALL =================
+
+if st.session_state.scenes:
+
+    all_scenes = "\n\n".join(
+        f"SCENE {i+1}\n{scene}"
+        for i, scene in enumerate(st.session_state.scenes)
+    )
+
+    st.divider()
+
+    st.download_button(
+        "📦 DOWNLOAD ALL GENERATED SCENES",
+        all_scenes,
+        file_name="complete_movie_scenes.txt"
+    )
+
+
+# ================= RESET =================
+
+st.divider()
+
+if st.button("🔄 RESET MOVIE PROJECT"):
 
     st.session_state.story = ""
     st.session_state.characters = ""
     st.session_state.scenes = []
     st.session_state.scene_number = 0
+    st.session_state.movie_context = ""
 
     st.rerun()
 
 
-st.caption(
-    "AI API usage may incur charges. "
-    "Your API key is used during this session."
-)
+st.markdown("""
+<div style="
+    text-align:center;
+    padding:22px;
+    color:#AAB9D4;
+    border-top:1px solid #30496E;
+">
+    🎬 AI MOVIE STUDIO<br>
+    <small>Powered by Google Gemini AI</small>
+</div>
+""", unsafe_allow_html=True)
