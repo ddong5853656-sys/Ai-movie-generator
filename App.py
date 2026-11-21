@@ -10,6 +10,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.title("AI Movie Studio")
+
+st.markdown("""
+Create cinematic movies with AI.
+
+Generate original movie stories, detailed character designs,
+and professional scene-by-scene video prompts.
+
+Bring your imagination to life with AI Movie Studio.
+""")
+
 # ================= GEMINI SECRET KEY =================
 
 try:
