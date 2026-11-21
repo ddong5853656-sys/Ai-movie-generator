@@ -3,6 +3,8 @@ from google import genai
 import time
 import re
 
+import json
+from streamlit_local_storage import LocalStorage
 st.set_page_config(
     page_title="AI Movie Studio",
     page_icon="🎬",
