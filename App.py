@@ -1018,6 +1018,21 @@ if st.session_state.story:
                 if result:
                     st.session_state.scenes.append(result)
                     st.session_state.scene_number = 1
+                                        # AUTO SAVE GENERATED SCENES
+                    project_data = {
+                        "story": st.session_state.story,
+                        "characters": st.session_state.characters,
+                        "scenes": st.session_state.scenes,
+                        "scene_number": st.session_state.scene_number,
+                        "movie_context": st.session_state.movie_context,
+                        "movie_title": st.session_state.movie_title,
+                        "aspect_ratio": st.session_state.aspect_ratio
+                    }
+
+                    localS.setItem(
+                        SAVE_KEY,
+                        json.dumps(project_data)
+                    )
                     st.rerun()
 
 
