@@ -1030,12 +1030,15 @@ if st.session_state.story:
                         "aspect_ratio": st.session_state.aspect_ratio
                     }
 
+                    
                     localS.setItem(
                         SAVE_KEY,
                         json.dumps(project_data)
                     )
 
+                    time.sleep(1.5)
                     st.rerun()
+                 
                     
 
     # AUTO SAVE GENERATED SCENES
