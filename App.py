@@ -1002,7 +1002,6 @@ if st.session_state.story:
 
         if st.button("🎬 GENERATE SCENE 1", key="first_scene"):
 
-
             with st.spinner("Creating cinematic Scene 1..."):
 
                 prompt = build_scene_prompt(
