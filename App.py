@@ -1002,6 +1002,7 @@ if st.session_state.story:
 
         if st.button("🎬 GENERATE SCENE 1", key="first_scene"):
 
+
             with st.spinner("Creating cinematic Scene 1..."):
 
                 prompt = build_scene_prompt(
@@ -1015,10 +1016,28 @@ if st.session_state.story:
 
                 result = generate(prompt)
 
-                
-if result:
-    st.session_state.scenes.append(result)
-    st.session_state.scene_number = 1
+                if result:
+                    st.session_state.scenes.append(result)
+                    st.session_state.scene_number = 1
+
+                    # AUTO SAVE GENERATED SCENES
+                    project_data = {
+                        "story": st.session_state.story,
+                        "characters": st.session_state.characters,
+                        "scenes": st.session_state.scenes,
+                        "scene_number": st.session_state.scene_number,
+                        "movie_context": st.session_state.movie_context,
+                        "movie_title": st.session_state.movie_title,
+                        "aspect_ratio": st.session_state.aspect_ratio
+                    }
+
+                    localS.setItem(
+                        SAVE_KEY,
+                        json.dumps(project_data)
+                    )
+
+                    st.rerun()
+                    
 
     # AUTO SAVE GENERATED SCENES
     project_data = {
